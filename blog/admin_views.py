@@ -1,0 +1,1422 @@
+import json
+import random
+import re
+import threading
+import time
+import urllib.parse
+
+import requests
+from django.conf import settings
+from django.contrib import admin, messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.core.files.base import ContentFile
+from django.http import JsonResponse
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.decorators import method_decorator
+from django.utils.text import slugify
+from django.views import View
+
+from .models import Author, Category, Post
+
+
+# =====================================================================
+#  BOT 0: PESQUISA WEB — Raspa artigos reais para contexto (RAG)
+# =====================================================================
+
+class WebResearchBot:
+    """Raspa artigos reais da web e extrai texto + imagens OG como contexto."""
+
+    _UA = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
+
+    @classmethod
+    def scrape_ddg_snippets(cls, query: str) -> list[str]:
+        """Extrai snippets de texto do DuckDuckGo Lite (rápido, sem JS)."""
+        try:
+            resp = requests.post(
+                "https://lite.duckduckgo.com/lite/",
+                headers={"User-Agent": cls._UA},
+                data={"q": query},
+                timeout=10,
+            )
+            snippets = re.findall(
+                r"<td class=['\"]result-snippet['\"]\s*>\s*(.*?)\s*</td>",
+                resp.text,
+                re.IGNORECASE | re.DOTALL,
+            )
+            clean = []
+            for s in snippets:
+                c = re.sub(r"<[^>]+>", "", s).strip()
+                c = (c.replace("&#39;", "'")
+                      .replace("&quot;", '"')
+                      .replace("&amp;", "&")
+                      .replace("&lt;", "<")
+                      .replace("&gt;", ">"))
+                if len(c) > 30:
+                    clean.append(c)
+            return clean[:6]
+        except Exception as e:
+            print(f"[WebResearch] Snippets erro: {e}")
+            return []
+
+    @classmethod
+    def scrape_ddg_links(cls, query: str, max_links: int = 3) -> list[str]:
+        """Obtém URLs reais de resultados do DuckDuckGo Lite."""
+        try:
+            resp = requests.post(
+                "https://lite.duckduckgo.com/lite/",
+                headers={"User-Agent": cls._UA},
+                data={"q": query},
+                timeout=10,
+            )
+            raw_urls = re.findall(r"uddg=([^&\"'\s]+)", resp.text)
+            clean = []
+            skip = {"youtube.com", "youtu.be", "duckduckgo.com", "bing.com", "google.com"}
+            for u in raw_urls:
+                decoded = urllib.parse.unquote(u)
+                if decoded.startswith("http") and not any(s in decoded for s in skip):
+                    clean.append(decoded)
+            return clean[:max_links]
+        except Exception as e:
+            print(f"[WebResearch] Links erro: {e}")
+            return []
+
+    @classmethod
+    def scrape_article(cls, url: str) -> dict | None:
+        """Extrai og:image e parágrafos de texto de um artigo via regex."""
+        try:
+            resp = requests.get(url, headers={"User-Agent": cls._UA}, timeout=12)
+            html = resp.text
+
+            # og:image — tenta os dois formatos de atributo
+            og = re.search(
+                r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)',
+                html, re.IGNORECASE,
+            ) or re.search(
+                r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+                html, re.IGNORECASE,
+            )
+            image = og.group(1) if og else None
+
+            # Parágrafos de texto (remove tags internas, filtra curtos)
+            raw_paras = re.findall(r"<p[^>]*>(.*?)</p>", html, re.DOTALL | re.IGNORECASE)
+            paras = []
+            for p in raw_paras:
+                clean = re.sub(r"<[^>]+>", "", p).strip()
+                clean = re.sub(r"\s+", " ", clean)
+                if len(clean) > 100:
+                    paras.append(clean)
+
+            return {
+                "url": url,
+                "image": image,
+                "text": "\n\n".join(paras[:6]),
+            }
+        except Exception as e:
+            print(f"[WebResearch] Artigo erro {url[:50]}: {e}")
+            return None
+
+    @classmethod
+    def collect_research(cls, topic: str) -> dict:
+        """Orquestra a pesquisa: snippets DDG + conteúdo de 3 artigos reais."""
+        result: dict = {"snippets": [], "og_images": [], "article_texts": []}
+        try:
+            result["snippets"] = cls.scrape_ddg_snippets(topic)
+            links = cls.scrape_ddg_links(topic, max_links=3)
+            for link in links:
+                data = cls.scrape_article(link)
+                if not data:
+                    continue
+                if data.get("image") and data["image"].startswith("http"):
+                    result["og_images"].append(data["image"])
+                if data.get("text"):
+                    result["article_texts"].append(data["text"])
+        except Exception as e:
+            print(f"[WebResearch] collect_research erro: {e}")
+        return result
+
+
+# =====================================================================
+#  MOTOR DE IMAGENS — DuckDuckGo Image Search (sem API key)
+# =====================================================================
+
+class ImageEngine:
+    """Busca imagens reais na internet via DuckDuckGo."""
+
+    _USER_AGENT = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
+
+    @classmethod
+    def search(cls, query: str, num: int = 5) -> list[dict]:
+        """Retorna lista de dicts com url, title, width, height."""
+        try:
+            session = requests.Session()
+            session.headers.update({"User-Agent": cls._USER_AGENT})
+
+            token_resp = session.get(
+                "https://duckduckgo.com/",
+                params={"q": query, "t": "h_", "iax": "images", "ia": "images"},
+                timeout=10,
+            )
+            vqd_match = (
+                re.search(r'vqd="([^"]+)"', token_resp.text)
+                or re.search(r"vqd='([^']+)'", token_resp.text)
+                or re.search(r"vqd=([\d-]+)", token_resp.text)
+            )
+            if not vqd_match:
+                return []
+
+            img_resp = session.get(
+                "https://duckduckgo.com/i.js",
+                params={
+                    "l": "us-en",
+                    "o": "json",
+                    "q": query,
+                    "vqd": vqd_match.group(1),
+                    "f": ",,,,,",
+                    "p": "1",
+                },
+                headers={"Referer": "https://duckduckgo.com/"},
+                timeout=10,
+            )
+
+            if img_resp.status_code != 200:
+                return []
+
+            results = []
+            for r in img_resp.json().get("results", []):
+                url = r.get("image", "")
+                w, h = r.get("width", 0), r.get("height", 0)
+                if url and w >= 400 and h >= 300:
+                    results.append({"url": url, "title": r.get("title", ""), "width": w, "height": h})
+                if len(results) >= num:
+                    break
+            return results
+
+        except Exception as e:
+            print(f"[ImageEngine] Erro: {e}")
+            return []
+
+    @classmethod
+    def best_image_url(cls, query: str) -> str | None:
+        results = cls.search(query, num=3)
+        if results:
+            results.sort(key=lambda r: r["width"] * r["height"], reverse=True)
+            return results[0]["url"]
+        return None
+
+    @classmethod
+    def download(cls, url: str) -> bytes | None:
+        try:
+            resp = requests.get(url, timeout=15, headers={"User-Agent": cls._USER_AGENT})
+            if resp.status_code == 200 and len(resp.content) > 5000:
+                return resp.content
+        except Exception as e:
+            print(f"[ImageEngine] Falha ao baixar {url[:60]}: {e}")
+        return None
+
+
+# =====================================================================
+#  MOTOR DE IMAGENS — Pexels API (alta qualidade, chave configurada)
+# =====================================================================
+
+class PexelsEngine:
+    """Busca fotos de alta qualidade no Pexels usando a API oficial."""
+
+    @classmethod
+    def search(cls, query: str) -> str | None:
+        api_key = getattr(settings, "PEXELS_API_KEY", None)
+        if not api_key:
+            return None
+        try:
+            resp = requests.get(
+                "https://api.pexels.com/v1/search",
+                headers={"Authorization": api_key},
+                params={"query": query, "per_page": 5, "orientation": "landscape"},
+                timeout=10,
+            )
+            photos = resp.json().get("photos", [])
+            if photos:
+                # Escolhe aleatoriamente entre as 5 fotos para variar entre matérias
+                src = random.choice(photos).get("src", {})
+                return src.get("large2x") or src.get("large") or src.get("original")
+        except Exception as e:
+            print(f"[Pexels] Erro: {e}")
+        return None
+
+
+# =====================================================================
+#  PIPELINE MULTI-AGENTE — 6 bots especializados
+# =====================================================================
+
+class AgentPipeline:
+    """
+    Pipeline de 6 bots para geração de matérias com qualidade editorial.
+
+    Bot 0 (externo): WebResearchBot — raspa artigos reais e imagens OG
+    Bot 1: Pesquisador — briefing fundamentado em dados reais
+    Bot 2: Redator — artigo completo com fatos da pesquisa
+    Bot 3: Editor Web — HTML semântico + SEO + marcadores de imagem
+    Bot 4: Refinador de Queries — melhora as queries de imagem com contexto
+    Bot 5: Curador de Imagens — OG > Pexels > DuckDuckGo
+    """
+
+    def __init__(self, model_name: str, api_key: str):
+        self.model_name = model_name
+        self.api_key = api_key
+        self.logs: list[str] = []
+        self.research_context: dict = {"snippets": [], "og_images": [], "article_texts": []}
+
+    def _log(self, msg: str):
+        print(msg)
+        self.logs.append(msg)
+
+    @staticmethod
+    def _extract_json(text: str) -> dict:
+        """
+        Extrai o primeiro objeto JSON válido de uma string.
+        Usa contagem de chaves balanceadas para lidar com HTML aninhado
+        no campo 'html', onde o regex greedy costuma falhar.
+        """
+        start = text.find("{")
+        if start == -1:
+            return {}
+        depth = 0
+        in_string = False
+        escape_next = False
+        for i, ch in enumerate(text[start:], start):
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == "\\" and in_string:
+                escape_next = True
+                continue
+            if ch == '"':
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start : i + 1]
+                    try:
+                        return json.loads(candidate, strict=False)
+                    except json.JSONDecodeError:
+                        # Tenta escapar newlines dentro de strings e reparsa
+                        try:
+                            return json.loads(
+                                re.sub(r'(?<!\\)\n', r'\\n', candidate), strict=False
+                            )
+                        except Exception:
+                            return {}
+        return {}
+
+    def _call_llm(self, system: str, user: str, expect_json: bool = False) -> str | dict:
+        """Chama a API Groq com retry automático em rate limits."""
+        api_url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": 0.7,
+        }
+
+        for attempt in range(5):
+            resp = requests.post(api_url, headers=headers, json=payload, timeout=180)
+
+            if resp.status_code == 429:
+                try:
+                    err = resp.json().get("error", {}).get("message", "")
+                    # Suporta: "in 8s", "in 1m8.888s", "in 1h5m0s"
+                    m = re.search(r"in (?:(\d+)h)?(?:(\d+)m)?(\d+\.?\d*)s", err)
+                    if m:
+                        wait = (
+                            int(m.group(1) or 0) * 3600
+                            + int(m.group(2) or 0) * 60
+                            + float(m.group(3))
+                            + 3
+                        )
+                    else:
+                        wait = 65
+                except Exception:
+                    wait = 65
+
+                MAX_WAIT = 300  # 5 minutos — acima disso é quota esgotada
+                if wait > MAX_WAIT:
+                    raise Exception(
+                        f"Quota de API esgotada. O Groq pede para aguardar "
+                        f"{wait/60:.0f} minutos. Tente novamente mais tarde."
+                    )
+                self._log(f"[RATE LIMIT] Aguardando {wait:.0f}s (tentativa {attempt + 1}/5)...")
+                time.sleep(wait)
+                continue
+
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"]
+
+            if expect_json:
+                parsed = self._extract_json(content)
+                if parsed:
+                    return parsed
+                # JSON inválido — aguarda e retenta em vez de desistir
+                self._log(f"[AVISO] Resposta sem JSON válido (tentativa {attempt + 1}/5). Retentar...")
+                time.sleep(10)
+                continue
+            return content
+
+        raise Exception("Rate limit excedido após 5 tentativas. Aguarde 1 minuto.")
+
+    # -----------------------------------------------------------------
+    #  BOT 1: PESQUISADOR — Briefing com contexto web real
+    # -----------------------------------------------------------------
+    def agent_researcher(self, user_prompt: str, variation: int = 1, total: int = 1) -> str:
+        self._log(f"\n📋 [BOT 1 PESQUISADOR] Elaborando briefing com dados reais...")
+
+        # Monta bloco de contexto web se disponível
+        web_block = ""
+        snippets = self.research_context.get("snippets", [])
+        article_texts = self.research_context.get("article_texts", [])
+
+        if snippets or article_texts:
+            parts = []
+            if snippets:
+                parts.append("SNIPPETS ENCONTRADOS NA WEB:\n" + "\n".join(f"• {s}" for s in snippets))
+            if article_texts:
+                combined = "\n\n---\n\n".join(article_texts[:2])
+                parts.append(f"CONTEÚDO DE ARTIGOS REAIS:\n{combined[:3500]}")
+            web_block = "\n\nCONTEXTO REAL PESQUISADO (use como base factual):\n" + "\n\n".join(parts)
+
+        system = (
+            "Você é um Pesquisador e Analista de Conteúdo sênior de uma redação digital.\n"
+            "Sua tarefa é produzir um BRIEFING ESTRUTURADO que guiará o redator.\n\n"
+            "O briefing DEVE conter:\n"
+            "1. ÂNGULO EDITORIAL: Perspectiva única e relevante para abordar\n"
+            "2. ESTRUTURA SUGERIDA: 4-6 seções/subtítulos recomendados\n"
+            "3. DADOS-CHAVE: Fatos, estatísticas e contextos concretos a incluir\n"
+            "4. TOM E ESTILO: Como o texto deve soar (investigativo, analítico, narrativo)\n"
+            "5. PÚBLICO-ALVO: Para quem estamos escrevendo\n\n"
+            "IMPORTANTE: Use os dados reais fornecidos como base. Não invente fatos.\n"
+            "Retorne APENAS o briefing em texto puro. SEM HTML. SEM JSON."
+        )
+
+        variation_text = ""
+        if total > 1:
+            variation_text = (
+                f"\n\n(Esta é a variação {variation} de {total}. "
+                "Escolha um ÂNGULO EDITORIAL completamente diferente das outras variações, "
+                "mas mantenha-se fiel aos fatos reais fornecidos.)"
+            )
+
+        return self._call_llm(system, f"TÓPICO: {user_prompt}{variation_text}{web_block}")
+
+    # -----------------------------------------------------------------
+    #  BOT 2: REDATOR — Artigo fundamentado em fatos reais
+    # -----------------------------------------------------------------
+    def agent_writer(self, briefing: str, user_prompt: str) -> str:
+        self._log("✍️  [BOT 2 REDATOR] Redigindo artigo...")
+
+        # Snippets como âncoras de fatos reais
+        snippets = self.research_context.get("snippets", [])
+        facts_block = ""
+        if snippets:
+            facts_block = (
+                "\n\nFATOS REAIS DA PESQUISA (mencione ao menos 3 destes no artigo):\n"
+                + "\n".join(f"• {s}" for s in snippets)
+            )
+
+        system = (
+            "Você é um Jornalista Sênior premiado, com estilo envolvente e apurado.\n"
+            "Receberá um BRIEFING da equipe de pesquisa, as instruções do editor "
+            "e fatos reais coletados da web.\n\n"
+            "REGRAS ABSOLUTAS:\n"
+            "- Escreva um artigo LONGO (mínimo 800 palavras), rico em detalhes e narrativa.\n"
+            "- Use os FATOS REAIS fornecidos — não invente estatísticas nem dados.\n"
+            "- Use parágrafos bem construídos. Varie frases curtas de impacto com parágrafos analíticos.\n"
+            "- Divida o texto em seções com títulos descritivos.\n"
+            "- Inclua pelo menos uma citação ou frase memorável.\n"
+            "- Tom profissional mas acessível — qualidade de revista.\n\n"
+            "PROIBIDO:\n"
+            "- NÃO use HTML, Markdown ou formatação especial.\n"
+            "- NÃO retorne JSON.\n"
+            "- NÃO invente fatos. Se um dado não estiver nas fontes, contextualize com honestidade.\n"
+            "- Retorne APENAS o texto do artigo."
+        )
+
+        return self._call_llm(
+            system,
+            f"INSTRUÇÕES DO EDITOR: {user_prompt}\n\nBRIEFING DA PESQUISA:\n{briefing}{facts_block}",
+        )
+
+    # -----------------------------------------------------------------
+    #  BOT 3: EDITOR WEB — HTML semântico + SEO + marcadores de imagem
+    # -----------------------------------------------------------------
+    def agent_editor(self, raw_text: str, user_prompt: str = "") -> dict:
+        self._log("💻 [BOT 3 EDITOR WEB] Formatando HTML e SEO...")
+
+        topic_line = (
+            f"- TEMA DESTE ARTIGO: \"{user_prompt[:120]}\"\n"
+            if user_prompt else ""
+        )
+
+        system = (
+            "Você é um Editor Web e Especialista em SEO de uma publicação digital premium.\n"
+            "Receberá um artigo em texto puro e deve transformá-lo em HTML semântico rico.\n\n"
+            "REGRAS DE FORMATAÇÃO:\n"
+            "- Use APENAS tags internas (sem <html>, <head>, <body>).\n"
+            "- Subtítulos em <h2> com emojis sutis (ex: 🔍 Análise Detalhada).\n"
+            "- Sub-subtítulos em <h3>.\n"
+            "- Aplique <strong> nas palavras-chave e conceitos cruciais.\n"
+            "- Citações em <blockquote style=\"border-left: 4px solid #10b981; "
+            "padding: 15px 20px; font-style: italic; color: #555; margin: 25px 0; "
+            "background: #f0fdf4; border-radius: 0 8px 8px 0;\">.\n"
+            "- Listas com <ul> e <li> para enumerações.\n"
+            "- Separadores <hr style=\"border:0; border-top: 1px solid #e5e7eb; margin: 35px 0;\"> "
+            "entre grandes blocos.\n"
+            "- Parágrafos em <p>.\n\n"
+            f"MARCADORES DE IMAGEM:\n"
+            f"{topic_line}"
+            "- Insira exatamente 3 marcadores [IMG_HERE: descrição muito específica] "
+            "entre parágrafos onde uma foto editorial enriqueceria a leitura.\n"
+            "- A descrição DEVE referenciar explicitamente o tema do artigo com detalhes visuais únicos.\n"
+            "- OBRIGATÓRIO: inclua o nome/produto/evento específico, nunca genérico.\n"
+            "  Exemplo ERRADO: 'pessoa usando computador', 'grupo de pessoas'\n"
+            "  Exemplo CERTO para CrossFire: '[IMG_HERE: CrossFire FPS game online battle arena gameplay]'\n"
+            "  Exemplo CERTO para Origem série: '[IMG_HERE: Origen MGM series family road loop thriller scene]'\n"
+            "- PROIBIDO usar: pessoa, pessoas, grupo, cena, ambiente, fundo, trabalhando, conceito\n\n"
+            "RESPONDA em JSON VÁLIDO com estas chaves:\n"
+            "{\n"
+            '  "title": "Título magnético e cativante",\n'
+            '  "meta_title": "Título SEO (máx 60 chars)",\n'
+            '  "meta_description": "Descrição SEO atrativa (máx 160 chars)",\n'
+            '  "html": "<todo o HTML com marcadores [IMG_HERE: ...]>",\n'
+            '  "cover_search": "Termo ultra-específico para foto de capa (em inglês, inclua o nome do tema)",\n'
+            '  "thoughts": "Breve log das decisões editoriais"\n'
+            "}"
+        )
+
+        result = self._call_llm(system, f"ARTIGO PARA FORMATAR:\n\n{raw_text}", expect_json=True)
+
+        if not result or "html" not in result:
+            self._log("[FALLBACK] Editor falhou. Usando formatação de emergência.")
+            lines = [l.strip() for l in raw_text.strip().split("\n") if l.strip()]
+
+            # Título: primeira linha não vazia com conteúdo real (não genérica)
+            title = "Matéria Gerada por IA"
+            for l in lines:
+                if len(l) > 15 and not l.lower().startswith(("introdução", "introduction")):
+                    title = l[:80]
+                    break
+            if title == "Matéria Gerada por IA" and lines:
+                title = lines[0][:80]
+
+            html_parts = []
+            img_count = 0
+            for idx, line in enumerate(lines):
+                if not line:
+                    continue
+                if len(line) < 100 and line[0].isupper() and not line.endswith("."):
+                    html_parts.append(f"<h2>{line}</h2>")
+                    # Insere marcador de imagem após 1º, 3º e 5º subtítulo
+                    if img_count < 3 and idx > 0:
+                        topic_hint = line[:50]
+                        html_parts.append(f"[IMG_HERE: {topic_hint} scene editorial photo]")
+                        img_count += 1
+                else:
+                    html_parts.append(f"<p>{line}</p>")
+
+            # Garante pelo menos 2 marcadores mesmo sem subtítulos
+            existing = len(re.findall(r"\[IMG_HERE", "\n".join(html_parts)))
+            paragraphs_idx = [i for i, p in enumerate(html_parts) if p.startswith("<p>")]
+            for pi in paragraphs_idx:
+                if existing >= 3:
+                    break
+                if pi > 0:
+                    html_parts.insert(pi, f"[IMG_HERE: {title[:40]} thematic photo]")
+                    existing += 1
+
+            result = {
+                "title": title,
+                "meta_title": title[:60],
+                "meta_description": title[:160],
+                "html": "\n".join(html_parts),
+                "cover_search": f"{title[:50]} dramatic scene",
+                "thoughts": "Fallback de emergência com marcadores de imagem.",
+            }
+
+        return result
+
+    # -----------------------------------------------------------------
+    #  BOT 4: REFINADOR DE QUERIES — Melhora buscas de imagem com contexto
+    # -----------------------------------------------------------------
+    def agent_image_query_refiner(self, html: str, cover_search: str, user_prompt: str = "") -> dict:
+        """
+        Recebe o HTML formatado e refina as queries de imagem para serem
+        mais específicas e em inglês (melhor resultado em bancos de fotos).
+        """
+        self._log("🔎 [BOT 4 REFINADOR] Otimizando queries de imagem...")
+
+        # Extrai os marcadores atuais
+        markers = re.findall(r"\[IMG_HERE:\s*(.*?)\]", html, re.IGNORECASE)
+        if not markers and not cover_search:
+            return {"cover_search": cover_search, "image_queries": []}
+
+        markers_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(markers))
+
+        topic_context = user_prompt[:150] if user_prompt else cover_search
+
+        system = (
+            f"Você é especialista em curadoria de imagens editoriais.\n"
+            f"O artigo é ESPECIFICAMENTE sobre: \"{topic_context}\".\n\n"
+            "REGRAS OBRIGATÓRIAS para cada query refinada:\n"
+            f"1. A query DEVE conter o tema \"{cover_search[:60]}\" ou seu equivalente visual direto em inglês.\n"
+            "2. Máximo 5 palavras, em inglês, otimizadas para Pexels.\n"
+            "3. Especifique elementos visuais CONCRETOS do tema: objetos, ações, locais únicos.\n"
+            "4. PROIBIDO usar: 'person', 'people', 'scene', 'background', 'concept' sozinhos.\n"
+            "5. A capa deve ter impacto visual máximo e ser inequivocamente sobre o tema.\n\n"
+            f"Exemplo para tema 'CrossFire game':\n"
+            f"  Input: 'jogadores em batalha' → Output: 'CrossFire FPS esports tournament gameplay'\n"
+            f"Exemplo para tema 'Origem série MGM':\n"
+            f"  Input: 'família na estrada' → Output: 'Origen MGM thriller family trapped mystery'\n\n"
+            "RESPONDA em JSON:\n"
+            "{\n"
+            '  "cover_search": "refined cover query in English (must include topic name)",\n'
+            '  "image_queries": ["topic-specific query 1", "topic-specific query 2", "topic-specific query 3"]\n'
+            "}"
+        )
+
+        user = (
+            f"CAPA ATUAL: {cover_search}\n\n"
+            f"MARCADORES DE IMAGEM:\n{markers_text}"
+        )
+
+        result = self._call_llm(system, user, expect_json=True)
+
+        if not result or "cover_search" not in result:
+            return {"cover_search": cover_search, "image_queries": markers}
+
+        # Garante que temos queries suficientes
+        refined_queries = result.get("image_queries", [])
+        while len(refined_queries) < len(markers):
+            refined_queries.append(markers[len(refined_queries)] if len(refined_queries) < len(markers) else cover_search)
+
+        return {
+            "cover_search": result["cover_search"],
+            "image_queries": refined_queries,
+        }
+
+    # -----------------------------------------------------------------
+    #  BOT 5: CURADOR DE IMAGENS — OG > Pexels > DuckDuckGo
+    # -----------------------------------------------------------------
+    def _get_best_image(self, query: str, og_candidates: list | None = None) -> str | None:
+        """
+        Busca a melhor imagem disponível em ordem de qualidade:
+        1. og:image dos artigos raspados (garantidamente relevante ao tema)
+        2. Pexels API (alta qualidade, chave disponível)
+        3. DuckDuckGo Image Search (fallback)
+        """
+        # 1. OG images dos artigos reais (100% relevantes ao tópico)
+        for url in (og_candidates or []):
+            if url and url.startswith("http"):
+                self._log(f"   🖼️ Usando OG image da pesquisa: {url[:70]}")
+                return url
+
+        # 2. Pexels (alta qualidade)
+        url = PexelsEngine.search(query)
+        if url:
+            self._log(f"   ✅ Pexels: '{query[:40]}'")
+            return url
+
+        # 3. DuckDuckGo (fallback)
+        url = ImageEngine.best_image_url(query)
+        if url:
+            self._log(f"   ✅ DDG: '{query[:40]}'")
+            return url
+
+        return None
+
+    def agent_image_curator(
+        self,
+        html: str,
+        cover_search: str,
+        refined_queries: list | None = None,
+    ) -> tuple[str, str | None]:
+        """
+        Processa [IMG_HERE: ...] usando queries refinadas e fontes priorizadas.
+        Retorna (html_final, cover_url).
+        """
+        self._log("📸 [BOT 5 CURADOR DE IMAGENS] Buscando fotos reais...")
+
+        og_images = self.research_context.get("og_images", [])
+        og_pool = list(og_images)  # pool de imagens OG para consumir em ordem
+        query_index = [0]  # índice para iterar queries refinadas
+
+        def replace_image_marker(match):
+            raw_desc = match.group(1).strip()
+
+            # Usa query refinada se disponível, senão usa a original
+            if refined_queries and query_index[0] < len(refined_queries):
+                search_query = refined_queries[query_index[0]]
+            else:
+                search_query = raw_desc
+            query_index[0] += 1
+
+            self._log(f"   🔎 Imagem {query_index[0]}: '{search_query[:50]}'")
+
+            # Seções usam Pexels → DDG (OG fica reservado para a capa)
+            url = self._get_best_image(search_query)
+
+            if url:
+                return (
+                    f'<figure style="margin: 30px 0; text-align: center;">'
+                    f'<img src="{url}" alt="{raw_desc}" '
+                    f'style="width:100%; max-height:500px; object-fit:cover; '
+                    f'border-radius:12px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);">'
+                    f'<figcaption style="color:#888; font-size:0.85em; margin-top:8px; '
+                    f'font-style:italic;">{raw_desc}</figcaption>'
+                    f'</figure>'
+                )
+            self._log(f"   ⚠️ Sem imagem para: '{search_query[:50]}'")
+            return ""
+
+        final_html = re.sub(
+            r"\[IMG_HERE:\s*(.*?)\]",
+            replace_image_marker,
+            html,
+            flags=re.IGNORECASE,
+        )
+        # Compatibilidade com marcadores legados
+        final_html = re.sub(
+            r"\[BING_IMAGE:\s*(.*?)\]",
+            replace_image_marker,
+            final_html,
+            flags=re.IGNORECASE,
+        )
+
+        # Capa: tenta OG do pool restante, depois Pexels, depois DDG
+        self._log(f"   🖼️ Buscando capa: '{cover_search[:50]}'")
+        cover_url = self._get_best_image(cover_search, og_candidates=og_pool or None)
+        if cover_url:
+            self._log("   ✅ Capa encontrada!")
+        else:
+            self._log("   ⚠️ Capa não encontrada.")
+
+        return final_html, cover_url
+
+    # -----------------------------------------------------------------
+    #  ORQUESTRADOR — Executa o pipeline completo (6 bots)
+    # -----------------------------------------------------------------
+    def run(self, user_prompt: str, variation: int = 1, total: int = 1) -> dict:
+        """Executa o pipeline completo e retorna o resultado."""
+        self._log(f"\n{'='*60}")
+        self._log(f"🚀 PIPELINE MULTI-AGENTE v2 — Matéria {variation}/{total}")
+        self._log(f"   Modelo: {self.model_name}")
+        self._log(f"   Prompt: {user_prompt[:80]}...")
+        self._log(f"{'='*60}")
+
+        # ── Bot 0: Pesquisa Web (RAG) ─────────────────────────────────
+        self._log("\n🌐 [BOT 0 WEB RESEARCH] Raspando artigos reais da web...")
+        self.research_context = WebResearchBot.collect_research(user_prompt)
+        self._log(
+            f"   Snippets: {len(self.research_context['snippets'])} | "
+            f"OG Images: {len(self.research_context['og_images'])} | "
+            f"Artigos: {len(self.research_context['article_texts'])}"
+        )
+
+        # ── Bot 1: Pesquisador ────────────────────────────────────────
+        briefing = self.agent_researcher(user_prompt, variation, total)
+        self._log(f"   📋 Briefing: {len(briefing)} chars")
+
+        # ── Bot 2: Redator ────────────────────────────────────────────
+        raw_article = self.agent_writer(briefing, user_prompt)
+        self._log(f"   ✍️ Artigo: {len(raw_article)} chars (~{len(raw_article.split())} palavras)")
+
+        # ── Bot 3: Editor Web ─────────────────────────────────────────
+        editor_result = self.agent_editor(raw_article, user_prompt=user_prompt)
+        self._log(f"   💻 HTML formatado | Título: {editor_result.get('title', 'N/A')}")
+
+        # ── Bot 4: Refinador de Queries ───────────────────────────────
+        refined = self.agent_image_query_refiner(
+            editor_result.get("html", ""),
+            editor_result.get("cover_search", user_prompt),
+            user_prompt=user_prompt,
+        )
+
+        # ── Bot 5: Curador de Imagens ─────────────────────────────────
+        final_html, cover_url = self.agent_image_curator(
+            editor_result.get("html", ""),
+            refined.get("cover_search", editor_result.get("cover_search", user_prompt)),
+            refined_queries=refined.get("image_queries"),
+        )
+
+        # ── Keywords: extração automática para artigos relacionados ──
+        self._log("🏷️ [KEYWORDS] Extraindo palavras-chave...")
+        try:
+            kw_system = (
+                "Você extrai palavras-chave de artigos para uso em busca de artigos relacionados. "
+                "Responda APENAS com JSON válido: {\"keywords\": [\"palavra1\", \"palavra2\", ...]}"
+            )
+            kw_user = (
+                f"Tema: {user_prompt[:120]}\n"
+                f"Título: {editor_result.get('title', '')}\n"
+                f"Resumo: {editor_result.get('meta_description', '')}\n\n"
+                "Extraia 6-10 palavras-chave em português, específicas ao tema. "
+                "Inclua: nome do produto/série/evento, gênero, termos técnicos únicos."
+            )
+            kw_result = self._call_llm(kw_system, kw_user, expect_json=True)
+            keywords_str = ", ".join(kw_result.get("keywords", []))
+        except Exception:
+            keywords_str = ""
+        self._log(f"   🏷️ Keywords: {keywords_str[:80]}")
+
+        self._log(f"\n✅ PIPELINE CONCLUÍDO — Matéria {variation}!")
+
+        return {
+            "title": editor_result.get("title", f"Matéria {variation}"),
+            "meta_title": editor_result.get("meta_title", "")[:60],
+            "meta_description": editor_result.get("meta_description", "")[:160],
+            "html": final_html,
+            "cover_url": cover_url,
+            "keywords": keywords_str,
+            "thoughts": editor_result.get("thoughts", ""),
+            "logs": self.logs.copy(),
+        }
+
+
+# =====================================================================
+#  VIEW DO DJANGO — IA Escritor
+# =====================================================================
+
+@method_decorator(staff_member_required, name="dispatch")
+class AIWriterView(View):
+    template_name = "admin/ai_writer.html"
+
+    def get(self, request):
+        context = {
+            "categories": Category.objects.all(),
+            "authors": Author.objects.filter(is_team_member=True),
+            "saved_provider": request.session.get("ai_writer_provider", "groq_gpt_oss_120b"),
+            "saved_api_key": request.session.get("ai_writer_api_key", ""),
+            "saved_category": request.session.get("ai_writer_category", ""),
+            "saved_author": request.session.get("ai_writer_author", ""),
+            "saved_prompt": request.session.get("ai_writer_prompt", ""),
+            "saved_quantity": request.session.get("ai_writer_quantity", 1),
+            "saved_generate_image": request.session.get("ai_writer_generate_image", True),
+            "saved_publish_now": request.session.get("ai_writer_publish_now", False),
+        }
+        context.update(admin.site.each_context(request))
+        context["available_apps"] = admin.site.get_app_list(request)
+        return render(request, self.template_name, context)
+
+    def post(self, request):
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+        provider = request.POST.get("provider", "groq_gpt_oss_120b")
+        api_key = request.POST.get("api_key")
+        category_id = request.POST.get("category")
+        author_id = request.POST.get("author")
+        prompt = request.POST.get("prompt")
+        quantity_str = request.POST.get("quantity", "1")
+        quantity = max(1, min(10, int(quantity_str) if quantity_str.isdigit() else 1))
+        current_iteration = int(request.POST.get("current_iteration", "1")) if is_ajax else 1
+
+        generate_image = request.POST.get("generate_image") == "1"
+        publish_now = request.POST.get("publish_now") == "1"
+
+        if not is_ajax or current_iteration == 1:
+            request.session["ai_writer_provider"] = provider
+            request.session["ai_writer_api_key"] = api_key
+            request.session["ai_writer_category"] = category_id
+            request.session["ai_writer_author"] = author_id
+            request.session["ai_writer_prompt"] = prompt
+            request.session["ai_writer_quantity"] = quantity
+            request.session["ai_writer_generate_image"] = generate_image
+            request.session["ai_writer_publish_now"] = publish_now
+
+        if not api_key or not prompt or not category_id or not author_id:
+            messages.error(request, "Por favor, preencha todos os campos obrigatórios.")
+            return redirect("custom_admin:ai_writer")
+
+        try:
+            category = Category.objects.get(id=category_id)
+            author = Author.objects.get(id=author_id)
+
+            if provider == "groq_gpt_oss_120b":
+                model_name = "openai/gpt-oss-120b"
+            else:
+                model_name = "llama-3.3-70b-versatile"
+
+            success_count = 0
+            loop_range = [current_iteration - 1] if is_ajax else range(quantity)
+
+            for i in loop_range:
+                try:
+                    pipeline = AgentPipeline(model_name, api_key)
+                    result = pipeline.run(prompt, variation=i + 1, total=quantity)
+
+                    post = Post()
+                    post.title = result["title"]
+                    post.content = result["html"]
+                    post.category = category
+                    post.author = author
+                    post.status = "published" if publish_now else "draft"
+                    post.meta_title = result["meta_title"]
+                    post.meta_description = result["meta_description"]
+                    post.keywords = result.get("keywords", "")
+
+                    if generate_image and result.get("cover_url"):
+                        try:
+                            img_bytes = ImageEngine.download(result["cover_url"])
+                            if img_bytes:
+                                fname = f"{slugify(result['title'])[:30]}_cover.jpg"
+                                post.thumbnail.save(fname, ContentFile(img_bytes), save=False)
+                        except Exception as e:
+                            print(f"[AVISO] Erro ao salvar capa: {e}")
+                            messages.warning(request, f"Matéria salva, mas erro na capa: {e}")
+
+                    post.save()
+                    auto_translate_post(post)
+                    success_count += 1
+
+                    if is_ajax:
+                        return JsonResponse({
+                            "status": "success",
+                            "title": result["title"],
+                            "thoughts": result["thoughts"],
+                            "logs": result["logs"],
+                        })
+
+                except requests.exceptions.RequestException as e:
+                    details = ""
+                    if hasattr(e, "response") and e.response is not None:
+                        details = f" — {e.response.text[:300]}"
+                    msg = f"Erro de API na matéria {i+1}: {e}{details}"
+                    print(f"\n[ERRO] {msg}\n")
+                    if is_ajax:
+                        return JsonResponse({"status": "error", "error": msg})
+                    messages.warning(request, msg)
+
+                except Exception as e:
+                    msg = f"Erro na matéria {i+1}: {e}"
+                    print(f"\n[ERRO FATAL] {msg}\n")
+                    if is_ajax:
+                        return JsonResponse({"status": "error", "error": msg})
+                    messages.warning(request, msg)
+
+            if success_count > 0:
+                messages.success(request, f"{success_count} matéria(s) gerada(s) com sucesso!")
+                if "ai_writer_prompt" in request.session:
+                    del request.session["ai_writer_prompt"]
+                return redirect(reverse("custom_admin:blog_post_changelist"))
+            else:
+                messages.error(request, "Nenhuma matéria pôde ser gerada. Veja os alertas.")
+                return redirect("custom_admin:ai_writer")
+
+        except Exception as e:
+            messages.error(request, f"Erro inesperado: {e}")
+            return redirect("custom_admin:ai_writer")
+
+
+# =====================================================================
+#  BOT DE TRADUÇÃO AUTOMÁTICA — Groq + HTML-safe
+# =====================================================================
+
+class TranslationBot:
+    """
+    Traduz posts para EN, ES e FR preservando toda a estrutura HTML.
+    Usa llama-3.3-70b (rápido, gratuito, bom para tradução).
+    """
+
+    _LANGUAGES = {"en": "English", "es": "Spanish", "fr": "French"}
+    _MODEL = "llama-3.3-70b-versatile"
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+
+    # ------------------------------------------------------------------
+    def _call(self, system: str, user: str, timeout: int = 120) -> str:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": self._MODEL,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": 0.2,
+        }
+        for attempt in range(4):
+            resp = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=timeout,
+            )
+            if resp.status_code == 429:
+                try:
+                    err = resp.json().get("error", {}).get("message", "")
+                    m = re.search(r"in (?:(\d+)h)?(?:(\d+)m)?(\d+\.?\d*)s", err)
+                    wait = (
+                        int(m.group(1) or 0) * 3600
+                        + int(m.group(2) or 0) * 60
+                        + float(m.group(3))
+                        + 3
+                    ) if m else 65
+                except Exception:
+                    wait = 65
+                if wait > 300:
+                    raise Exception(f"Quota de API esgotada para tradução ({wait/60:.0f} min).")
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip()
+        raise Exception("Rate limit de tradução excedido após 4 tentativas.")
+
+    # ------------------------------------------------------------------
+    def _translate_fields(self, title: str, meta_title: str, meta_desc: str, lang_code: str) -> dict:
+        """Traduz campos de texto simples em uma única chamada (JSON)."""
+        lang = self._LANGUAGES[lang_code]
+        system = (
+            f"Translate from Brazilian Portuguese to {lang}. "
+            "Return a JSON object with exactly these keys: title, meta_title, meta_description. "
+            "Return ONLY valid JSON, no markdown, no code blocks, no extra text."
+        )
+        user = json.dumps(
+            {"title": title, "meta_title": meta_title, "meta_description": meta_desc},
+            ensure_ascii=False,
+        )
+        raw = self._call(system, user)
+        return AgentPipeline._extract_json(raw)
+
+    # ------------------------------------------------------------------
+    def _translate_html(self, html: str, lang_code: str) -> str:
+        """Traduz HTML preservando todas as tags, atributos e media."""
+        lang = self._LANGUAGES[lang_code]
+        system = (
+            f"Translate the following HTML from Brazilian Portuguese to {lang}.\n"
+            "STRICT RULES:\n"
+            "1. Translate ONLY the visible text between HTML tags.\n"
+            "2. Keep ALL HTML tags and attributes (src, href, class, id, style, data-*) EXACTLY unchanged.\n"
+            "3. Keep ALL image and media URLs unchanged.\n"
+            "4. You MAY translate alt=\"\" values.\n"
+            "5. Return ONLY the translated HTML — no markdown, no code blocks, no extra text."
+        )
+        # Limita o HTML para evitar estouro de tokens
+        return self._call(system, html[:14000], timeout=150)
+
+    # ------------------------------------------------------------------
+    def translate_post(self, post) -> None:
+        """Traduz um Post para EN, ES e FR, salvando diretamente na tabela de traduções."""
+        from parler.models import TranslationDoesNotExist
+
+        post.set_current_language("pt-br")
+        src_title = post.title or ""
+        src_meta_title = post.meta_title or ""
+        src_meta_desc = post.meta_description or ""
+        src_html = post.content or ""
+
+        for lang_code in self._LANGUAGES:
+            try:
+                text = self._translate_fields(src_title, src_meta_title, src_meta_desc, lang_code)
+                translated_html = self._translate_html(src_html, lang_code)
+
+                title = (text.get("title") or "").strip() or src_title
+                meta_title = (text.get("meta_title") or "")[:60]
+                meta_desc = (text.get("meta_description") or "")[:160]
+                slug = slugify(title)[:200] or f"post-{post.pk}-{lang_code}"
+
+                # Recusa salvar se o HTML traduzido for menor que 20% do original
+                # (sinal de que a tradução falhou ou foi truncada)
+                min_len = max(50, len(src_html) * 0.20)
+                if len(translated_html.strip()) < min_len:
+                    print(
+                        f"[TranslationBot] ⚠️ {lang_code}: conteúdo suspeito "
+                        f"({len(translated_html)} chars vs {len(src_html)} original). "
+                        "Tradução ignorada para não sobrescrever com conteúdo vazio."
+                    )
+                    continue
+
+                try:
+                    trans = post.get_translation(lang_code)
+                    trans.title = title
+                    trans.slug = slug
+                    trans.content = translated_html
+                    trans.meta_title = meta_title
+                    trans.meta_description = meta_desc
+                    trans.save()
+                except TranslationDoesNotExist:
+                    post.create_translation(
+                        lang_code,
+                        title=title,
+                        slug=slug,
+                        content=translated_html,
+                        meta_title=meta_title,
+                        meta_description=meta_desc,
+                    )
+
+                print(f"[TranslationBot] ✅ {lang_code}: '{title}'")
+
+            except Exception as exc:
+                print(f"[TranslationBot] ❌ {lang_code}: {exc}")
+
+
+# =====================================================================
+#  VIEW: CONFIGURAÇÕES DE IA
+# =====================================================================
+
+@method_decorator(staff_member_required, name="dispatch")
+class AISettingsView(View):
+    template_name = "admin/ai_settings.html"
+
+    def get(self, request):
+        from .models import SiteSettings
+        site_cfg = SiteSettings.load()
+        api_key = site_cfg.groq_api_key or ""
+        masked = ("•" * (len(api_key) - 4) + api_key[-4:]) if len(api_key) > 4 else ("•" * len(api_key))
+        context = {
+            "groq_api_key": api_key,
+            "masked_key": masked,
+            "has_key": bool(api_key),
+        }
+        context.update(admin.site.each_context(request))
+        context["available_apps"] = admin.site.get_app_list(request)
+        return render(request, self.template_name, context)
+
+    def post(self, request):
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        action = request.POST.get("action", "")
+
+        if action == "test_connection":
+            api_key = request.POST.get("api_key", "").strip()
+            if not api_key:
+                return JsonResponse({"status": "error", "error": "Insira uma chave API primeiro."})
+            try:
+                pipeline = AgentPipeline("llama-3.3-70b-versatile", api_key)
+                result = pipeline._call_llm(
+                    "Você é um assistente de teste. Responda APENAS com a palavra: CONECTADO",
+                    "ping",
+                    expect_json=False,
+                )
+                snippet = str(result).strip()[:80]
+                return JsonResponse({"status": "success", "message": f"Conexão estabelecida! Resposta: {snippet}"})
+            except Exception as exc:
+                return JsonResponse({"status": "error", "error": str(exc)[:300]})
+
+        if action == "save_key":
+            from .models import SiteSettings
+            api_key = request.POST.get("api_key", "").strip()
+            from django.db import connection as db_conn
+            # Update only the groq_api_key column to avoid translatable-model complexity
+            SiteSettings.objects.filter(pk=1).update(groq_api_key=api_key)
+            verb = "salva" if api_key else "removida"
+            messages.success(request, f"Chave API Groq {verb} com sucesso! Os botões de IA nos posts agora funcionarão.")
+            return redirect(reverse("custom_admin:ai_settings"))
+
+        messages.error(request, "Ação inválida.")
+        return redirect(reverse("custom_admin:ai_settings"))
+
+
+def auto_translate_post(post) -> None:
+    """
+    Verifica se há chave API configurada nas SiteSettings e, se houver,
+    dispara a tradução em uma thread de fundo (não bloqueia a resposta HTTP).
+    """
+    from .models import SiteSettings
+
+    try:
+        api_key = SiteSettings.load().groq_api_key or ""
+    except Exception:
+        api_key = ""
+
+    if not api_key:
+        return
+
+    def _run():
+        try:
+            TranslationBot(api_key).translate_post(post)
+        except Exception as exc:
+            print(f"[auto_translate_post] Erro geral: {exc}")
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
+# ─────────────────────────────────────────────────────────────────────
+#  8 ESTILOS VISUAIS ÚNICOS para "Formatar Conteúdo"
+# ─────────────────────────────────────────────────────────────────────
+_FORMAT_THEMES = [
+    {
+        "name": "Esmeralda",
+        "h2":  "color:#059669; border-left:5px solid #10b981; padding-left:16px; margin:36px 0 18px; font-size:1.55em; line-height:1.3;",
+        "h3":  "color:#065f46; border-bottom:2px solid #d1fae5; padding-bottom:8px; margin:26px 0 14px;",
+        "strong": "color:#059669; font-weight:700;",
+        "blockquote": "border-left:5px solid #10b981; background:#f0fdf4; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#374151;",
+        "callout": "background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #86efac; border-left:5px solid #10b981; border-radius:12px; padding:20px 24px; margin:28px 0;",
+        "hr": "border:0; border-top:2px solid #d1fae5; margin:42px 0;",
+    },
+    {
+        "name": "Violeta Premium",
+        "h2":  "background:linear-gradient(90deg,#7c3aed,#6d28d9); color:#fff; padding:12px 20px; border-radius:8px; margin:36px 0 18px; font-size:1.45em; box-shadow:0 4px 14px rgba(124,58,237,.25);",
+        "h3":  "color:#6d28d9; border-left:4px solid #a78bfa; padding-left:14px; margin:26px 0 14px;",
+        "strong": "color:#7c3aed; font-weight:700;",
+        "blockquote": "border-left:5px solid #8b5cf6; background:#f5f3ff; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#4c1d95;",
+        "callout": "background:linear-gradient(135deg,#f5f3ff,#ede9fe); border:1px solid #c4b5fd; border-left:5px solid #7c3aed; border-radius:12px; padding:20px 24px; margin:28px 0;",
+        "hr": "border:0; height:3px; background:linear-gradient(90deg,#7c3aed,#8b5cf6,transparent); margin:42px 0;",
+    },
+    {
+        "name": "Âmbar Editorial",
+        "h2":  "color:#92400e; border-bottom:3px solid #f59e0b; padding-bottom:10px; margin:38px 0 18px; font-size:1.55em; letter-spacing:-.3px;",
+        "h3":  "color:#b45309; background:#fffbeb; padding:8px 14px; border-radius:6px; border-left:3px solid #f59e0b; margin:26px 0 14px;",
+        "strong": "color:#b45309; font-weight:700;",
+        "blockquote": "border-left:5px solid #f59e0b; background:#fffbeb; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#78350f;",
+        "callout": "background:linear-gradient(135deg,#fffbeb,#fef3c7); border:1px solid #fde68a; border-left:5px solid #f59e0b; border-radius:12px; padding:20px 24px; margin:28px 0;",
+        "hr": "border:0; border-top:2px dashed #fde68a; margin:42px 0;",
+    },
+    {
+        "name": "Safira Jornalístico",
+        "h2":  "color:#1e40af; border-left:5px solid #3b82f6; padding-left:16px; margin:36px 0 18px; font-size:1.55em;",
+        "h3":  "color:#1d4ed8; border-bottom:1px solid #bfdbfe; padding-bottom:8px; margin:26px 0 14px;",
+        "strong": "color:#1d4ed8; font-weight:700;",
+        "blockquote": "border-left:5px solid #3b82f6; background:#eff6ff; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#1e3a5f;",
+        "callout": "background:linear-gradient(135deg,#eff6ff,#dbeafe); border:1px solid #93c5fd; border-left:5px solid #3b82f6; border-radius:12px; padding:20px 24px; margin:28px 0;",
+        "hr": "border:0; border-top:2px solid #dbeafe; margin:42px 0;",
+    },
+    {
+        "name": "Rosa Magazine",
+        "h2":  "color:#be185d; border-left:5px solid #ec4899; padding-left:16px; margin:36px 0 18px; font-size:1.55em; font-style:italic;",
+        "h3":  "background:linear-gradient(90deg,#fdf2f8,transparent); color:#9d174d; padding:8px 14px; border-radius:8px; margin:26px 0 14px;",
+        "strong": "color:#be185d; font-weight:700;",
+        "blockquote": "border-left:5px solid #ec4899; background:#fdf2f8; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#831843;",
+        "callout": "background:linear-gradient(135deg,#fdf2f8,#fce7f3); border:1px solid #f9a8d4; border-left:5px solid #ec4899; border-radius:12px; padding:20px 24px; margin:28px 0;",
+        "hr": "border:0; height:2px; background:linear-gradient(90deg,#ec4899,#f9a8d4,transparent); margin:42px 0;",
+    },
+    {
+        "name": "Ardósia Minimalista",
+        "h2":  "color:#0f172a; border-top:3px solid #475569; padding-top:16px; margin:42px 0 18px; font-size:1.6em; letter-spacing:-.5px; font-weight:800;",
+        "h3":  "color:#334155; text-transform:uppercase; letter-spacing:.9px; font-size:.9em; font-weight:700; margin:30px 0 12px;",
+        "strong": "color:#0f172a; font-weight:800; text-decoration:underline; text-decoration-color:#94a3b8;",
+        "blockquote": "border-left:4px solid #94a3b8; background:#f8fafc; padding:18px 24px; margin:30px 0; font-style:italic; color:#475569;",
+        "callout": "background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid #475569; border-radius:8px; padding:20px 24px; margin:28px 0;",
+        "hr": "border:0; border-top:1px solid #e2e8f0; margin:42px 0;",
+    },
+    {
+        "name": "Índigo Digital",
+        "h2":  "color:#fff; background:linear-gradient(135deg,#4f46e5,#6366f1); padding:12px 20px; border-radius:8px; margin:36px 0 18px; font-size:1.45em; box-shadow:0 4px 14px rgba(99,102,241,.3);",
+        "h3":  "color:#4f46e5; border-left:3px solid #818cf8; padding-left:12px; margin:26px 0 14px; font-family:monospace;",
+        "strong": "color:#4f46e5; font-weight:700;",
+        "blockquote": "border-left:5px solid #6366f1; background:#eef2ff; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#3730a3;",
+        "callout": "background:linear-gradient(135deg,#eef2ff,#e0e7ff); border:1px solid #a5b4fc; border-left:5px solid #6366f1; border-radius:12px; padding:20px 24px; margin:28px 0;",
+        "hr": "border:0; height:2px; background:linear-gradient(90deg,#6366f1,#818cf8,transparent); margin:42px 0;",
+    },
+    {
+        "name": "Rubi Bold News",
+        "h2":  "color:#991b1b; border-left:6px solid #ef4444; padding-left:16px; margin:36px 0 18px; font-size:1.65em; font-weight:800; letter-spacing:-.5px;",
+        "h3":  "color:#b91c1c; border-bottom:2px solid #fca5a5; padding-bottom:8px; margin:26px 0 14px; font-weight:700;",
+        "strong": "color:#dc2626; font-weight:800;",
+        "blockquote": "border-left:6px solid #ef4444; background:#fef2f2; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#7f1d1d; font-weight:500;",
+        "callout": "background:linear-gradient(135deg,#fef2f2,#fee2e2); border:1px solid #fca5a5; border-left:6px solid #ef4444; border-radius:12px; padding:20px 24px; margin:28px 0;",
+        "hr": "border:0; border-top:3px solid #fca5a5; margin:42px 0;",
+    },
+]
+
+
+# =====================================================================
+#  NOVA VIEW: FORMATAR CONTEÚDO com IA  (estilo único a cada clique)
+# =====================================================================
+
+@method_decorator(staff_member_required, name="dispatch")
+class FormatContentView(View):
+    """Recebe HTML do editor TinyMCE e devolve HTML reformatado com estilo único aleatório."""
+
+    def post(self, request):
+        from .models import SiteSettings
+        try:
+            api_key = SiteSettings.load().groq_api_key or ""
+        except Exception:
+            api_key = ""
+
+        if not api_key:
+            return JsonResponse({
+                "status": "error",
+                "error": "Configure a Chave API Groq em Configurações do Site primeiro.",
+            })
+
+        html_content = request.POST.get("content", "").strip()
+        title = request.POST.get("title", "")
+
+        if not html_content:
+            return JsonResponse({"status": "error", "error": "O conteúdo está vazio."})
+
+        # Escolhe um tema visual aleatório diferente a cada chamada
+        theme = random.choice(_FORMAT_THEMES)
+
+        try:
+            system = (
+                f"Você é um designer editorial premium. "
+                f"O estilo desta edição é: **{theme['name']}**.\n"
+                "Receberá HTML de um artigo. Reformate visualmente usando APENAS inline styles.\n\n"
+                "ESTILOS OBRIGATÓRIOS DESTE TEMA:\n"
+                f"- <h2>: style='{theme['h2']}'\n"
+                f"- <h3>: style='{theme['h3']}'\n"
+                f"- <strong>: substitua por <strong style='{theme['strong']}'>texto</strong>\n"
+                f"- <blockquote>: style='{theme['blockquote']}'\n"
+                f"- <hr>: substitua por <hr style='{theme['hr']}'>\n"
+                "- <p>: style='line-height:1.85; color:#374151; margin-bottom:18px; font-size:1.05em;'\n"
+                "- <ul>,<ol>: style='line-height:1.9; color:#374151; margin:16px 0 16px 24px;'\n"
+                "- <li>: style='margin-bottom:8px;'\n\n"
+                "BOXES DE DESTAQUE (para estatísticas e informações importantes):\n"
+                f"- Envolva em: <div style='{theme['callout']}'>...conteúdo...</div>\n"
+                "- Adicione separadores <hr> entre seções grandes se não houver.\n\n"
+                "REGRAS ABSOLUTAS:\n"
+                "- Preserve TODAS as imagens, <figure>, <figcaption> e URLs INALTERADOS.\n"
+                "- Não altere o conteúdo textual — apenas reformate visualmente.\n"
+                "- Retorne APENAS o HTML reformatado. Sem markdown, sem code fences, sem explicações."
+            )
+
+            pipeline = AgentPipeline("llama-3.3-70b-versatile", api_key)
+            result = pipeline._call_llm(system, f"HTML DO ARTIGO:\n\n{html_content[:14000]}")
+
+            if isinstance(result, dict):
+                result = result.get("html", html_content)
+            if isinstance(result, str):
+                result = re.sub(r"^```html?\s*", "", result.strip(), flags=re.IGNORECASE)
+                result = re.sub(r"\s*```$", "", result.strip())
+
+            return JsonResponse({
+                "status": "success",
+                "html": result,
+                "theme": theme["name"],
+            })
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "error": str(e)})
+
+
+# =====================================================================
+#  NOVA VIEW: TRADUZIR POST ON-DEMAND com IA
+# =====================================================================
+
+@method_decorator(staff_member_required, name="dispatch")
+class TranslatePostView(View):
+    """Dispara tradução EN/ES/FR para um post existente via botão no admin."""
+
+    def post(self, request):
+        from .models import Post, SiteSettings
+        try:
+            api_key = SiteSettings.load().groq_api_key or ""
+        except Exception:
+            api_key = ""
+
+        if not api_key:
+            return JsonResponse({
+                "status": "error",
+                "error": "Configure a Chave API Groq em Configurações do Site primeiro.",
+            })
+
+        post_id = request.POST.get("post_id", "").strip()
+        if not post_id:
+            return JsonResponse({
+                "status": "error",
+                "error": "Salve o post primeiro para poder traduzir.",
+            })
+
+        try:
+            post = Post.objects.get(pk=post_id)
+        except Post.DoesNotExist:
+            return JsonResponse({"status": "error", "error": "Post não encontrado."})
+
+        def _run():
+            try:
+                TranslationBot(api_key).translate_post(post)
+            except Exception as exc:
+                print(f"[TranslatePostView] Erro: {exc}")
+
+        threading.Thread(target=_run, daemon=True).start()
+
+        return JsonResponse({
+            "status": "started",
+            "message": "Tradução iniciada em segundo plano! Aguarde 1–3 minutos e recarregue a página para ver o resultado.",
+        })
+
+
+# =====================================================================
+#  NOVA VIEW: GERAR SEO + SLUG com IA
+# =====================================================================
+
+@method_decorator(staff_member_required, name="dispatch")
+class GenerateSEOView(View):
+    """Gera meta_title, meta_description e keywords baseados no conteúdo do post."""
+
+    def post(self, request):
+        from .models import SiteSettings
+        try:
+            api_key = SiteSettings.load().groq_api_key or ""
+        except Exception:
+            api_key = ""
+
+        if not api_key:
+            return JsonResponse({
+                "status": "error",
+                "error": "Configure a Chave API Groq em Configurações do Site primeiro.",
+            })
+
+        title = request.POST.get("title", "").strip()
+        content = request.POST.get("content", "").strip()
+
+        if not title and not content:
+            return JsonResponse({
+                "status": "error",
+                "error": "Preencha o título ou o conteúdo antes de gerar o SEO.",
+            })
+
+        try:
+            clean_content = re.sub(r"<[^>]+>", " ", content)
+            clean_content = re.sub(r"\s+", " ", clean_content).strip()[:3000]
+
+            pipeline = AgentPipeline("llama-3.3-70b-versatile", api_key)
+
+            system = (
+                "Você é um especialista em SEO para blogs em português brasileiro.\n"
+                "Analise o título e o conteúdo e gere os metadados SEO ideais.\n\n"
+                "REGRAS:\n"
+                "- meta_title: título SEO atrativo em português, máx 60 chars\n"
+                "- meta_description: descrição SEO completa e atrativa em português, máx 155 chars\n"
+                "- keywords: 8-12 palavras-chave específicas ao tema, separadas por vírgula, em português\n\n"
+                'RESPONDA em JSON com exatamente estas chaves: '
+                '{"meta_title":"","meta_description":"","keywords":""}'
+            )
+
+            user = f"TÍTULO: {title}\n\nCONTEÚDO:\n{clean_content}"
+            result = pipeline._call_llm(system, user, expect_json=True)
+
+            if not result or not isinstance(result, dict):
+                return JsonResponse({
+                    "status": "error",
+                    "error": "IA não retornou resultado válido. Tente novamente.",
+                })
+
+            return JsonResponse({
+                "status": "success",
+                "meta_title": (result.get("meta_title") or "")[:60],
+                "meta_description": (result.get("meta_description") or "")[:160],
+                "keywords": result.get("keywords", ""),
+            })
+
+        except Exception as e:
+            return JsonResponse({"status": "error", "error": str(e)})

@@ -1,0 +1,176 @@
+{% extends "blog/base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ site_settings.site_name }} - {% trans "Clareza em um Mundo Complexo" %}{% endblock %}
+
+{% block body_class %}is-homepage{% endblock %} 
+
+{% block content %}
+    
+    <section class="hero-section" id="home">
+        {% if featured_post %}
+            <a href="{{ featured_post.get_absolute_url }}" class="featured-post-hero">
+                <div class="featured-post-bg-image" style="background-image: url('{% if featured_post.thumbnail %}{{ featured_post.thumbnail.url }}{% else %}https://source.unsplash.com/random/1200x800?abstract,dark{% endif %}')"></div>
+                
+                <div class="featured-post-content">
+                    {% if featured_post.category %}
+                    <span class="tag mb-4">
+                        {{ featured_post.category.name }}
+                    </span>
+                    {% endif %}
+                    <h1 class="featured-post-title">{{ featured_post.title }}</h1>
+                    
+                    {# ✅ CORREÇÃO VALIDADA: A combinação de 'striptags' e 'safe' resolve o problema dos caracteres. #}
+                    <p class="featured-post-excerpt">{{ featured_post.content|striptags|truncatewords:25|safe }}</p>
+                    
+                    <div class="read-more-btn-featured">
+                        {% trans "Leia o artigo completo" %} <i class="fas fa-arrow-right ml-2"></i>
+                    </div>
+                </div>
+            </a>
+        {% else %}
+        <div class="hero-fallback">
+             <div class="container mx-auto px-4 text-center">
+                <h1 class="text-4xl font-bold text-white">{% blocktrans %}Bem-vindo ao {{ site_settings.site_name }}{% endblocktrans %}</h1>
+                <p class="text-xl text-gray-300 mt-4">{% trans "Nenhum post em destaque no momento. Explore nossos artigos recentes abaixo." %}</p>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+    <div class="page-content">
+        <div class="section-bg-2 py-16">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center mb-8 fade-in-element">
+                    <h3 class="text-2xl font-bold text-heading">{% trans "Artigos Recentes" %}</h3>
+                    <a href="{% url 'blog:post_list' %}" class="text-sm font-medium hover:underline" style="color: var(--color-accent);">{% trans "Ver todos" %} →</a>
+                </div>
+
+                <div id="post-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-6">
+                    {% for post in latest_posts %}
+                        <div class="grid-item fade-in-element">
+                            <a href="{{ post.get_absolute_url }}" class="glass-card flex flex-col h-full group">
+                                {# Este parcial também deve ter a correção 'striptags|...|safe' para funcionar corretamente #}
+                                {% include "blog/partials/post_card_content.html" with post=post %}
+                            </a>
+                        </div>
+                    {% empty %}
+                        <p class="col-span-full text-center text-secondary py-8">{% trans "Nenhum artigo recente encontrado." %}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% include "blog/partials/carousel_categories.html" %}
+
+        <div class="section-bg-2 py-16">
+             {% include "blog/partials/newsletter_section.html" %}
+        </div>
+
+        <div class="section-bg-2 py-16">
+            <section class="container mx-auto px-4" id="contact-section">
+               <div class="glass-card p-8 md:p-12">
+                    <div class="max-w-2xl mx-auto text-center fade-in-element">
+                        <h3 class="text-2xl font-bold text-heading mb-4">{% trans "Entre em Contato" %}</h3>
+                        <p class="text-secondary mb-8">{% trans "Tem alguma dúvida ou sugestão? Adoraríamos ouvir você." %}</p>
+                        
+                        <div id="form-messages">
+                            {% if messages %}
+                                {% for message in messages %}
+                                    {% if 'contact' in message.tags %}
+                                    <div class="p-4 mb-4 text-sm rounded-lg {% if 'success' in message.tags %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                        {{ message }}
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <form action="{% url 'blog:home' %}" method="post" class="space-y-4 text-left">
+                            {% csrf_token %}
+                            <div>
+                                <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-primary mb-1">{% trans "Nome" %}</label>
+                                {{ form.name }}
+                            </div>
+                            <div>
+                                <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-primary mb-1">{% trans "Email" %}</label>
+                                {{ form.email }}
+                            </div>
+                            <div>
+                                <label for="{{ form.message.id_for_label }}" class="block text-sm font-medium text-primary mb-1">{% trans "Mensagem" %}</label>
+                                {{ form.message }}
+                            </div>
+                            <div class="text-right">
+                                <button type="submit" class="submit-button">{% trans "Enviar Mensagem" %}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Lógica do Grid Dinâmico
+    const grid = document.getElementById('post-grid');
+    if (grid) {
+        const items = Array.from(grid.querySelectorAll('.grid-item'));
+        if (items.length > 0) {
+            const totalColumns = 4;
+            let currentRowColumns = 0;
+
+            items.forEach((item, index) => {
+                item.classList.remove('lg:col-span-2', 'lg:col-span-3', 'lg:col-span-4');
+                let wantsToExpand = Math.random() < 0.35;
+                let canExpand = currentRowColumns <= (totalColumns - 2);
+
+                if (items.length > 2 && wantsToExpand && canExpand) {
+                    item.classList.add('lg:col-span-2');
+                    currentRowColumns += 2;
+                } else {
+                    currentRowColumns += 1;
+                }
+                if (currentRowColumns >= totalColumns) {
+                    currentRowColumns = 0;
+                }
+            });
+
+            if (currentRowColumns > 0 && currentRowColumns < totalColumns) {
+                const lastItem = items[items.length - 1];
+                const spaceToFill = totalColumns - currentRowColumns + 1;
+                lastItem.classList.remove('lg:col-span-2');
+                
+                if (spaceToFill === 2) {
+                    lastItem.classList.add('lg:col-span-2');
+                } else if (spaceToFill === 3) {
+                    lastItem.classList.add('lg:col-span-3');
+                } else if (spaceToFill === 4) {
+                    lastItem.classList.add('lg:col-span-4');
+                }
+            }
+        }
+    }
+
+    // LÓGICA DE SCROLL PARA O FORMULÁRIO DE CONTATO
+    const formMessages = document.getElementById('form-messages');
+    if (formMessages && formMessages.children.length > 0) {
+        const contactSection = document.getElementById('contact-section');
+        if (contactSection) {
+            contactSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    // LÓGICA DE SCROLL PARA A NEWSLETTER
+    if (window.location.hash === '#newsletter-section') {
+        const newsletterSection = document.getElementById('newsletter-section');
+        if (newsletterSection) {
+            newsletterSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+});
+</script>
+{% endblock scripts %}
+
+{% endblock content %}

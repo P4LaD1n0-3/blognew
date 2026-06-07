@@ -1,0 +1,431 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Configurações de IA | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+/* ── AI Settings Page — Light Mode ─────────────────────── */
+.ai-settings-page { max-width: 860px; }
+
+/* Hero */
+.ai-hero {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+}
+.ai-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.ai-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.ai-hero-title h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #212529;
+}
+.ai-chip {
+  background: #e9ecef;
+  color: #495057;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ai-hero > div > p { color: #6c757d; margin: 0; font-size: 14px; }
+
+/* Status badge */
+.ai-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ai-status-badge.on  { background: #d1e7dd; color: #0f5132; }
+.ai-status-badge.off { background: #f8d7da; color: #842029; }
+.ai-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.ai-status-dot.on  { background: #198754; }
+.ai-status-dot.off { background: #dc3545; }
+
+/* Cards */
+.ai-card {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.ai-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+.ai-card-header h3 { margin: 0; font-size: 15px; font-weight: 700; color: #212529; }
+.ai-card-header p  { margin: 4px 0 0; font-size: 12px; color: #6c757d; }
+.ai-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.ai-card-icon.green  { background: #d1e7dd; }
+.ai-card-icon.indigo { background: #e8eaf6; }
+.ai-card-body { padding: 22px; }
+
+/* Info box */
+.ai-info-box {
+  background: #e7f3ff;
+  border: 1px solid #b6d4fe;
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  color: #0a58ca;
+  margin-bottom: 18px;
+}
+.ai-info-box a { color: #0a58ca; font-weight: 600; text-decoration: underline; }
+
+/* Key input */
+.ai-key-label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  color: #212529;
+  margin-bottom: 8px;
+}
+.ai-key-label span { color: #dc3545; }
+.ai-key-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ai-key-input {
+  flex: 1;
+  min-width: 200px;
+  border: 1.5px solid #ced4da;
+  border-radius: 6px;
+  padding: 9px 14px;
+  font-size: 13.5px;
+  color: #212529;
+  font-family: monospace;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+.ai-key-input:focus {
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(13,110,253,.15);
+}
+.ai-masked {
+  font-family: monospace;
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 8px;
+}
+
+/* Buttons */
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity .15s, transform .12s;
+  line-height: 1;
+}
+.ai-btn:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); text-decoration: none; }
+.ai-btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+.ai-btn-icon   { padding: 9px 12px; background: #e9ecef; color: #495057; }
+.ai-btn-green  { background: #198754; color: #fff !important; }
+.ai-btn-indigo { background: #3d5a99; color: #fff !important; }
+.ai-btn-slate  { background: #6c757d; color: #fff !important; }
+.ai-btn-red    { background: #dc3545; color: #fff !important; }
+
+/* Divider */
+.ai-divider { border: none; border-top: 1px solid #dee2e6; margin: 20px 0; }
+
+/* Actions row */
+.ai-actions-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* Test result */
+#test-result {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+}
+#test-result.ok  { display: block; background: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+#test-result.err { display: block; background: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+
+/* Model grid */
+.ai-model-grid { display: flex; flex-direction: column; gap: 12px; }
+.ai-model-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+.ai-model-name { font-size: 14px; font-weight: 700; color: #212529; margin-bottom: 4px; }
+.ai-model-desc { font-size: 12.5px; color: #6c757d; line-height: 1.55; }
+.ai-model-badge {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.ai-model-badge.gen  { background: #d1e7dd; color: #0f5132; }
+.ai-model-badge.trad { background: #cfe2ff; color: #084298; }
+.ai-model-badge.fmt  { background: #fff3cd; color: #664d03; }
+
+/* Spinner */
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+.ai-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(0,0,0,.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: ai-spin .7s linear infinite;
+  vertical-align: middle;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<div class="ai-settings-page">
+
+  {% if messages %}
+  <div style="margin-bottom:16px;">
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible" role="alert">
+      <button type="button" class="close" data-dismiss="alert">×</button>
+      {{ message }}
+    </div>
+  {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── HERO ────────────────────────────────────────── -->
+  <div class="ai-hero">
+    <div class="ai-hero-top">
+      <div>
+        <div class="ai-hero-title">
+          <h2>🤖 IA Admin — Painel de Configuração</h2>
+          <span class="ai-chip">Groq API</span>
+        </div>
+        <p>Configure sua chave para ativar formatação, tradução automática e geração de SEO em todos os posts.</p>
+      </div>
+      {% if has_key %}
+        <div class="ai-status-badge on">
+          <span class="ai-status-dot on"></span> Conectada
+        </div>
+      {% else %}
+        <div class="ai-status-badge off">
+          <span class="ai-status-dot off"></span> Não configurada
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── KEY FORM ─────────────────────────────────────── -->
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <div class="ai-card-icon green">🔑</div>
+      <div>
+        <h3>Chave API Groq</h3>
+        <p>Salva de forma segura nas Configurações do Site</p>
+      </div>
+    </div>
+    <div class="ai-card-body">
+
+      <div class="ai-info-box">
+        <strong>Como obter gratuitamente:</strong> Acesse
+        <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>
+        → crie uma conta → clique em <em>Create API Key</em> → cole abaixo.
+      </div>
+
+      <form method="post" action="" id="settings-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_key">
+
+        <label class="ai-key-label" for="api-key-input">
+          Chave API <span>*</span>
+        </label>
+        <div class="ai-key-row">
+          <input type="password"
+                 name="api_key"
+                 id="api-key-input"
+                 class="ai-key-input"
+                 placeholder="gsk-..."
+                 value="{{ groq_api_key }}"
+                 autocomplete="off"
+                 spellcheck="false">
+          <button type="button" class="ai-btn ai-btn-icon" onclick="toggleKey()" title="Mostrar/ocultar">
+            👁
+          </button>
+          <button type="button" class="ai-btn ai-btn-indigo" id="btn-test" onclick="testConnection()">
+            ⚡ Testar conexão
+          </button>
+          <button type="submit" class="ai-btn ai-btn-green">
+            💾 Salvar chave
+          </button>
+        </div>
+
+        {% if has_key %}
+        <div class="ai-masked">{{ masked_key }}</div>
+        {% endif %}
+      </form>
+
+      <div id="test-result"></div>
+
+      <hr class="ai-divider">
+
+      <div class="ai-actions-row">
+        <a href="{% url 'custom_admin:ai_writer' %}" class="ai-btn ai-btn-indigo">
+          🤖 IA Escritor
+        </a>
+        <a href="{% url 'custom_admin:blog_post_changelist' %}" class="ai-btn ai-btn-slate">
+          📝 Ir para Posts
+        </a>
+        {% if has_key %}
+        <form method="post" action="" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save_key">
+          <input type="hidden" name="api_key" value="">
+          <button type="submit" class="ai-btn ai-btn-red"
+                  onclick="return confirm('Remover a chave? Os botões de IA ficarão desativados.')">
+            🗑 Remover chave
+          </button>
+        </form>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── MODELOS ──────────────────────────────────────── -->
+  <div class="ai-card">
+    <div class="ai-card-header">
+      <div class="ai-card-icon indigo">📦</div>
+      <div>
+        <h3>Modelos utilizados</h3>
+        <p>Seleção automática pelo pipeline — nenhuma configuração necessária</p>
+      </div>
+    </div>
+    <div class="ai-card-body">
+      <div class="ai-model-grid">
+        <div class="ai-model-row">
+          <span class="ai-model-badge gen">GERAÇÃO</span>
+          <div>
+            <div class="ai-model-name">GPT-OSS 120B / Llama 3.3 70B</div>
+            <div class="ai-model-desc">Usado pelo IA Escritor para redigir artigos completos, formatar conteúdo com estilo e gerar SEO. Selecionável na tela do IA Escritor.</div>
+          </div>
+        </div>
+        <div class="ai-model-row">
+          <span class="ai-model-badge trad">TRADUÇÃO</span>
+          <div>
+            <div class="ai-model-name">Llama 3.3 70B Versatile</div>
+            <div class="ai-model-desc">Acionado automaticamente ao salvar um post ou clicar em "Traduzir EN/ES/FR" na barra de IA. Traduz título, conteúdo e metadados.</div>
+          </div>
+        </div>
+        <div class="ai-model-row">
+          <span class="ai-model-badge fmt">FORMATAÇÃO</span>
+          <div>
+            <div class="ai-model-name">Llama 3.3 70B Versatile</div>
+            <div class="ai-model-desc">Usado pelos botões ✨ Formatar Conteúdo (8 temas únicos aleatórios) e 🔍 Gerar SEO + Keywords diretamente na edição de posts.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function getCsrf() {
+  var el = document.querySelector('[name=csrfmiddlewaretoken]');
+  return el ? el.value : '';
+}
+function toggleKey() {
+  var inp = document.getElementById('api-key-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function testConnection() {
+  var inp = document.getElementById('api-key-input');
+  var btn = document.getElementById('btn-test');
+  var res = document.getElementById('test-result');
+  var key = inp.value.trim();
+  if (!key) {
+    res.className = 'err'; res.style.display = 'block';
+    res.textContent = '✗ Insira uma chave API primeiro.'; return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ai-spinner"></span> Testando…';
+  res.style.display = 'none';
+  fetch('{% url "custom_admin:ai_settings" %}', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrf(), 'X-Requested-With': 'XMLHttpRequest',
+               'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ action: 'test_connection', api_key: key }),
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.status === 'success') { res.className='ok'; res.textContent='✓ '+d.message; }
+    else { res.className='err'; res.textContent='✗ '+(d.error||'Erro desconhecido'); }
+    res.style.display='block';
+  })
+  .catch(function(e){ res.className='err'; res.textContent='✗ Rede: '+e.message; res.style.display='block'; })
+  .finally(function(){ btn.disabled=false; btn.innerHTML='⚡ Testar conexão'; });
+}
+</script>
+{% endblock %}

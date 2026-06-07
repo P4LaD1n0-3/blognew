@@ -1,0 +1,97 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4f46e5">
+
+
+    {% if site_settings.favicon %}
+        {# Se um favicon foi enviado no painel de admin, exibe as tags. #}
+        <link rel="icon" href="{{ site_settings.favicon.url }}">
+        <link rel="shortcut icon" href="{{ site_settings.favicon.url }}">
+        <link rel="apple-touch-icon" href="{{ site_settings.favicon.url }}">
+    {% endif %}
+
+    
+    <title>{% block page_title %}{{ site_settings.site_name }}{% endblock page_title %}</title>
+    <meta name="description" content="{% block meta_description %}{% trans 'Aqui você encontrará artigos e tutoriais sobre tecnologia, desenvolvimento e muito mais.' %}{% endblock meta_description %}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'assets/css/tailwind.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/header.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/footer.css' %}">
+
+    {% if GOOGLE_ADSENSE_PUB_ID %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ GOOGLE_ADSENSE_PUB_ID }}"
+            crossorigin="anonymous"></script>
+    {% endif %}
+
+    {% block extra_head %}{% endblock extra_head %}
+
+</head>
+
+<body class="flex flex-col min-h-screen font-sans {% block body_class %}{% endblock %}">
+    
+    {% include "blog/partials/header.html" %}
+
+    <div class="reading-progress-bar">
+        <div id="reading-progress" class="reading-progress-bar-fill"></div>
+    </div>
+    
+    <main class="flex-grow">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    {% include "blog/partials/footer.html" %}
+
+    <div class="fab-container">
+        {% if site_settings.whatsapp_number %}
+            <a href="https://wa.me/{{ site_settings.whatsapp_number }}" target="_blank" rel="noopener noreferrer" class="fab-btn whatsapp-btn" aria-label="{% trans "Fale conosco no WhatsApp" %}">
+                <i class="fab fa-whatsapp"></i>
+            </a>
+        {% endif %}
+        <button id="scrollToTopBtn" class="fab-btn scroll-top-btn" aria-label="{% trans "Voltar ao topo" %}">
+            <i class="fas fa-arrow-up"></i>
+        </button>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="{% static 'assets/js/main.js' %}"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Lógica para os Botões Flutuantes (FAB)
+        const fabContainer = document.querySelector('.fab-container');
+        const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+
+        if (fabContainer && scrollToTopBtn) {
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 300) {
+                    fabContainer.classList.add('visible');
+                } else {
+                    fabContainer.classList.remove('visible');
+                }
+            });
+
+            scrollToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        }
+    });
+    </script>
+
+
+
+</body>
+</html>

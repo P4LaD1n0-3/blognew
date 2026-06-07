@@ -1,0 +1,148 @@
+{% load static i18n %}
+<header class="site-header" id="site-header">
+    <nav class="header-nav">
+        <div class="container mx-auto px-4">
+            <div class="header-content">
+                
+                <div class="header-brand">
+                    <a href="{% url 'blog:home' %}" class="brand-link">
+                        {% if site_settings.logo %}
+                            {# Se um logo foi enviado, exibe a imagem com a classe .brand-logo #}
+                            <img class="brand-logo" src="{{ site_settings.logo.url }}" alt="Logo de {{ site_settings.site_name }}">
+                            
+                            {# Se a opção de mostrar o nome junto ao logo estiver ativa, exibe o nome #}
+                            {% if site_settings.show_name_with_logo %}
+                                <h1 class="brand-title">{{ site_settings.site_name }}</h1>
+                            {% endif %}
+                        {% else %}
+                            {# Caso contrário, exibe apenas o nome do site como texto #}
+                            <h1 class="brand-title">{{ site_settings.site_name }}</h1>
+                        {% endif %}
+                    </a>
+                </div>
+
+                <div class="header-navigation">
+                    <ul class="nav-links">
+                        <li><a href="{% url 'blog:home' %}" class="nav-link">{% trans "Home" %}</a></li>
+                        <li><a href="{% url 'blog:post_list' %}" class="nav-link">{% trans "Artigos" %}</a></li>
+                        <li><a href="{% url 'blog:category_list' %}" class="nav-link">{% trans "Categorias" %}</a></li>
+                        <li><a href="{% url 'blog:about' %}" class="nav-link">{% trans "Sobre" %}</a></li>
+                        <li>
+                          {% if request.user.is_authenticated and request.user.is_staff %}
+                            <a href="/painel/" class="nav-link"
+                               style="color:var(--color-accent);font-weight:700;display:flex;align-items:center;gap:5px;">
+                              <i class="fas fa-th-large" style="font-size:.8em;"></i> {% trans "Painel" %}
+                            </a>
+                          {% else %}
+                            <a href="/painel/login/" class="nav-link"
+                               style="color:var(--color-accent);font-weight:600;display:flex;align-items:center;gap:5px;">
+                              <i class="fas fa-right-to-bracket" style="font-size:.85em;"></i> {% trans "Entrar" %}
+                            </a>
+                          {% endif %}
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="header-search">
+                    <form action="{% url 'blog:search' %}" method="get" class="search-form">
+                        <div class="search-input-wrapper">
+                            <input type="text" 
+                                   name="query" 
+                                   class="search-input" 
+                                   placeholder="{% trans "Buscar artigos..." %}" 
+                                   value="{{ request.GET.query|default:'' }}"
+                                   autocomplete="off">
+                            <button type="submit" class="search-button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="header-theme-selector">
+                    <button type="button" class="theme-selector-btn" id="theme-selector-btn" aria-label="{% trans "Selecionar Tema" %}" aria-haspopup="true" aria-expanded="false">
+                        <span id="current-theme" class="current-theme">
+                            </span>
+                        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="theme-selector" id="theme-selector" role="listbox">
+                        <div class="theme-option" data-theme="serene" role="option" tabindex="0"><div class="theme-indicator" style="background: #a5b4fc;"></div> Serene</div>
+                        <div class="theme-option" data-theme="midnight" role="option" tabindex="0"><div class="theme-indicator" style="background: #93c5fd;"></div> Midnight</div>
+                        <div class="theme-option" data-theme="earth" role="option" tabindex="0"><div class="theme-indicator" style="background: #fca5a5;"></div> Earth</div>
+                        <div class="theme-option" data-theme="mint" role="option" tabindex="0"><div class="theme-indicator" style="background: #86efac;"></div> Mint</div>
+                        <div class="theme-option" data-theme="rosewater" role="option" tabindex="0"><div class="theme-indicator" style="background: #fda4af;"></div> Rosewater</div>
+                        <div class="theme-option" data-theme="slate" role="option" tabindex="0"><div class="theme-indicator" style="background: #94a3b8;"></div> Slate</div>
+                        <div class="theme-option" data-theme="latte" role="option" tabindex="0"><div class="theme-indicator" style="background: #d2b48c;"></div> Latte</div>
+                        <div class="theme-option" data-theme="oceanic" role="option" tabindex="0"><div class="theme-indicator" style="background: #5db4d9;"></div> Oceanic</div>
+                        <div class="theme-option" data-theme="amethyst" role="option" tabindex="0"><div class="theme-indicator" style="background: #673de6;"></div> Amethyst</div>
+                        <div class="theme-option" data-theme="azure" role="option" tabindex="0"><div class="theme-indicator" style="background: #00b3ff;"></div> Azure</div>
+                        <div class="theme-option" data-theme="forest" role="option" tabindex="0"><div class="theme-indicator" style="background: #006241;"></div> Forest</div>
+                        <div class="theme-option" data-theme="aqua" role="option" tabindex="0"><div class="theme-indicator" style="background: #00b3ff;"></div> Aqua</div>
+                    </div>
+                </div>
+
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-controls="mobile-navigation" aria-expanded="false">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="mobile-navigation" id="mobile-navigation">
+        <div class="mobile-nav-content">
+            <div class="mobile-search">
+                <form action="{% url 'blog:search' %}" method="get" class="mobile-search-form">
+                    <input type="text" 
+                           name="query" 
+                           class="mobile-search-input" 
+                           placeholder="{% trans "Buscar artigos..." %}" 
+                           value="{{ request.GET.query|default:'' }}">
+                    <button type="submit" class="mobile-search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <ul class="mobile-nav-links">
+                <li><a href="{% url 'blog:home' %}" class="mobile-nav-link">{% trans "Home" %}</a></li>
+                <li><a href="{% url 'blog:post_list' %}" class="mobile-nav-link">{% trans "Artigos" %}</a></li>
+                <li><a href="{% url 'blog:category_list' %}" class="mobile-nav-link">{% trans "Categorias" %}</a></li>
+                <li><a href="{% url 'blog:about' %}" class="mobile-nav-link">{% trans "Sobre" %}</a></li>
+                <li>
+                  {% if request.user.is_authenticated and request.user.is_staff %}
+                    <a href="/painel/" class="mobile-nav-link" style="color:var(--color-accent);font-weight:700;">
+                      <i class="fas fa-th-large"></i> {% trans "Painel" %}
+                    </a>
+                  {% else %}
+                    <a href="/painel/login/" class="mobile-nav-link" style="color:var(--color-accent);font-weight:600;">
+                      <i class="fas fa-right-to-bracket"></i> {% trans "Entrar" %}
+                    </a>
+                  {% endif %}
+                </li>
+            </ul>
+
+            <div class="mobile-theme-selector">
+                <h4 class="mobile-theme-title">{% trans "Escolha um Tema" %}</h4>
+                <div class="mobile-theme-grid">
+                    <button class="theme-option" data-theme="serene" aria-label="Tema Serene"><div class="theme-indicator" style="background: #a5b4fc;"></div></button>
+                    <button class="theme-option" data-theme="midnight" aria-label="Tema Midnight"><div class="theme-indicator" style="background: #93c5fd;"></div></button>
+                    <button class="theme-option" data-theme="earth" aria-label="Tema Earth"><div class="theme-indicator" style="background: #fca5a5;"></div></button>
+                    <button class="theme-option" data-theme="mint" aria-label="Tema Mint"><div class="theme-indicator" style="background: #86efac;"></div></button>
+                    <button class="theme-option" data-theme="rosewater" aria-label="Tema Rosewater"><div class="theme-indicator" style="background: #fda4af;"></div></button>
+                    <button class="theme-option" data-theme="slate" aria-label="Tema Slate"><div class="theme-indicator" style="background: #94a3b8;"></div></button>
+                    <button class="theme-option" data-theme="latte" aria-label="Tema Latte"><div class="theme-indicator" style="background: #d2b48c;"></div></button>
+                    <button class="theme-option" data-theme="oceanic" aria-label="Tema Oceanic"><div class="theme-indicator" style="background: #5db4d9;"></div></button>
+                    <button class="theme-option" data-theme="amethyst" aria-label="Tema Amethyst"><div class="theme-indicator" style="background: #673de6;"></div></button>
+                    <button class="theme-option" data-theme="azure" aria-label="Tema Azure"><div class="theme-indicator" style="background: #00b3ff;"></div></button>
+                    <button class="theme-option" data-theme="forest" aria-label="Tema Forest"><div class="theme-indicator" style="background: #006241;"></div></button>
+                    <button class="theme-option" data-theme="aqua" aria-label="Tema Aqua"><div class="theme-indicator" style="background: #00b3ff;"></div></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="reading-progress-bar">
+        <div class="progress-fill" id="reading-progress"></div>
+    </div>
+</header>

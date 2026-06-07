@@ -1,0 +1,111 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}{% if author %}Editar Autor{% else %}Novo Autor{% endif %}{% endblock %}
+{% block breadcrumb %}
+  <span class="mx-2 text-slate-300">/</span>
+  <a href="{% url 'dashboard:authors_list' %}" class="hover:text-indigo-600">Autores</a>
+  <span class="mx-2 text-slate-300">/</span>
+  {% if author %}Editar{% else %}Novo{% endif %}
+{% endblock %}
+{% block page_heading %}{% if author %}Editar Autor{% else %}Novo Autor{% endif %}{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+    <!-- Left -->
+    <div class="xl:col-span-2 space-y-5">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">Informações Pessoais</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Nome Completo <span class="text-red-500">*</span></label>
+            {{ form.full_name }}
+            {% if form.full_name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.full_name.errors.0 }}</p>{% endif %}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Email <span class="text-red-500">*</span></label>
+            {{ form.email }}
+            {% if form.email.errors %}<p class="text-red-500 text-xs mt-1">{{ form.email.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Cargo / Função</label>
+          {{ form.role }}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Biografia</label>
+          {{ form.bio }}
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">Redes Sociais</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">
+              <i class="fab fa-linkedin text-blue-600 mr-1"></i> LinkedIn
+            </label>
+            {{ form.linkedin_url }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">
+              <i class="fab fa-instagram text-pink-500 mr-1"></i> Instagram
+            </label>
+            {{ form.instagram_url }}
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">
+            <i class="fab fa-whatsapp text-green-500 mr-1"></i> WhatsApp
+          </label>
+          {{ form.whatsapp_number }}
+          <p class="text-xs text-slate-400 mt-1">Apenas números com código do país. Ex: 5511999999999</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right -->
+    <div class="space-y-5">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">Foto de Perfil</h3>
+        {% if author and author.profile_picture %}
+          <img src="{{ author.profile_picture.url }}" alt="{{ author.full_name }}"
+               class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border-4 border-slate-100">
+        {% else %}
+          <div class="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-user text-white text-2xl"></i>
+          </div>
+        {% endif %}
+        {{ form.profile_picture }}
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">Configurações</h3>
+        <div class="flex items-center gap-3">
+          {{ form.is_team_member }}
+          <label class="text-sm text-slate-700">Membro da equipe principal</label>
+        </div>
+        <p class="text-xs text-slate-400 mt-2">Se marcado, aparece na página Sobre</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <div class="flex gap-2">
+          <button type="submit"
+                  class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+            <i class="fas fa-save mr-1.5"></i> Salvar
+          </button>
+          <a href="{% url 'dashboard:authors_list' %}"
+             class="px-4 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+            Cancelar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,309 @@
+{% extends "blog/base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ author.full_name }} - {% trans "Perfil" %}{% endblock %}
+
+{% block content %}
+<style>
+    /* ======================================== */
+    /* ESTILOS DO HEADER DO AUTOR      */
+    /* ======================================== */
+    :root {
+        --bg-section-1: #ffffff;
+        --bg-section-2: #f9fafb;
+        --text-heading: #1f2937;
+        --text-secondary: #6b7280;
+        --shadow-color: rgba(0,0,0,0.07);
+        --color-accent: #3b82f6;
+    }
+
+    .author-detail-header {
+        background-color: var(--bg-section-2);
+        padding: 4rem 1rem;
+    }
+    .author-card-detail {
+        max-width: 800px;
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .author-card-detail img,
+    .author-card-detail canvas {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--bg-section-1);
+        box-shadow: 0 4px 15px var(--shadow-color);
+        flex-shrink: 0;
+    }
+
+    .author-card-detail h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--text-heading);
+    }
+    .author-card-detail .role {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--color-accent);
+        margin-top: -0.5rem;
+    }
+    .author-card-detail .bio {
+        margin-top: 1rem;
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+    }
+    
+    .author-social-links a {
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        margin-right: 1.25rem;
+        transition: color 0.2s ease, transform 0.2s ease;
+        display: inline-block;
+    }
+    .author-social-links a:hover { 
+        color: var(--color-accent);
+        transform: scale(1.1);
+    }
+    .author-social-links a:last-child {
+        margin-right: 0;
+    }
+
+    /* ======================================== */
+    /* ESTILOS DO CARROSSEL            */
+    /* ======================================== */
+    .related-posts-section-fullwidth { background: var(--bg-section-2, #f8f9fa); padding: 4rem 0; position: relative; overflow: hidden; }
+    .section-header { text-align: center; margin-bottom: 3rem; }
+    .section-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.5rem; background: var(--color-accent, #007bff); color: white; border-radius: 50px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1.5rem; }
+    .section-title { font-size: 2.5rem; font-weight: 800; color: var(--text-heading, #212529); margin-bottom: 1rem; }
+    .section-subtitle { color: var(--text-secondary, #6c757d); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+    .carousel-fullwidth-wrapper { position: relative; }
+    .carousel-fullwidth-container { overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2rem 0; scroll-padding: 0 2rem; }
+    .carousel-fullwidth-container::-webkit-scrollbar { display: none; }
+    .carousel-fullwidth-track { display: flex; width: max-content; min-width: 100%; margin: 0; padding: 0 2rem; gap: 2rem; }
+    .carousel-slide { flex: 0 0 auto; scroll-snap-align: center; width: 90%; max-width: 380px; }
+    .card-link-fullwidth { display: block; background: var(--bg-card, #ffffff); border-radius: 0.5rem; overflow: hidden; transition: all 0.3s ease; text-decoration: none; border: 1px solid var(--border-color, #dee2e6); box-shadow: 0 8px 32px var(--shadow-color, rgba(0,0,0,0.08)); height: 100%; }
+    .card-link-fullwidth:hover { transform: translateY(-8px); box-shadow: 0 20px 40px var(--shadow-color, rgba(0,0,0,0.12)); }
+    .card-image-wrapper-fullwidth { position: relative; height: 220px; overflow: hidden; }
+    .card-image-fullwidth { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+    .related-post-card-fullwidth:hover .card-image-fullwidth { transform: scale(1.1); }
+    .card-content-fullwidth { padding: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+    .card-category-fullwidth { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; display: block; }
+    .card-title-fullwidth { font-size: 1.3rem; font-weight: 700; color: var(--text-heading, #212529); margin-bottom: 1rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-excerpt-fullwidth { color: var(--text-secondary, #6c757d); line-height: 1.6; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1; }
+    .read-more-btn-fullwidth { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--color-accent, #007bff); text-decoration: none; transition: all 0.2s ease; cursor: pointer; }
+    .read-more-btn-fullwidth:hover { color: var(--color-accent, #0056b3); text-decoration: underline; }
+    .read-more-btn-fullwidth i { font-size: 0.8rem; transition: transform 0.2s ease; }
+    .read-more-btn-fullwidth:hover i { transform: translateX(3px); }
+    .card-meta-fullwidth { display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary, #6c757d); font-size: 0.85rem; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color, #dee2e6); }
+    .card-separator-fullwidth { opacity: 0.6; }
+    .carousel-controls-fullwidth { position: absolute; top: 50%; transform: translateY(-50%); width: 100%; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; padding: 0 1rem; }
+    .carousel-btn-fullwidth { width: 50px; height: 50px; border-radius: 50%; background: var(--bg-card, #ffffff); border: 1px solid var(--border-color, #dee2e6); color: var(--text-primary, #495057); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.3s ease; backdrop-filter: blur(10px); box-shadow: 0 8px 32px var(--shadow-color, rgba(0,0,0,0.08)); pointer-events: all; opacity: 0.9; }
+    .carousel-btn-fullwidth:hover { background: var(--color-accent, #007bff); color: white; transform: scale(1.1); box-shadow: 0 12px 40px var(--shadow-color, rgba(0,0,0,0.1)); opacity: 1; }
+    .carousel-btn-fullwidth:disabled { opacity: 0.3; cursor: not-allowed; transform: scale(1); }
+    .carousel-indicators-fullwidth { display: flex; justify-content: center; gap: 0.5rem; margin-top: 3rem; }
+    .carousel-indicator-fullwidth { width: 12px; height: 12px; border-radius: 50%; background: var(--border-color, #dee2e6); cursor: pointer; transition: all 0.3s ease; border: none; }
+    .carousel-indicator-fullwidth.active { background: var(--color-accent, #007bff); transform: scale(1.2); }
+    
+    @media (max-width: 768px) {
+        .carousel-controls-fullwidth { display: none; }
+    }
+</style>
+
+<div class="author-detail-header">
+    <div class="author-card-detail">
+        {% if author.profile_picture %}
+            <img src="{{ author.profile_picture.url }}" alt="{% trans "Foto de" %} {{ author.full_name }}">
+        {% else %}
+            <canvas id="avatarCanvas" width="160" height="160"></canvas>
+        {% endif %}
+
+        <div>
+            <h1>{{ author.full_name }}</h1>
+            <p class="role">{{ author.role|default:_("Criador de Conteúdo") }}</p>
+            <p class="bio">{{ author.bio|safe|default:_("Entusiasta de tecnologia e inovação, compartilhando conhecimento e explorando novas fronteiras.") }}</p>
+
+            <div class="author-social-links mt-4">
+                {% if author.linkedin_url %}<a href="{{ author.linkedin_url }}" target="_blank" rel="noopener noreferrer" title="LinkedIn"><i class="fab fa-linkedin"></i></a>{% endif %}
+                {% if author.instagram_url %}<a href="{{ author.instagram_url }}" target="_blank" rel="noopener noreferrer" title="Instagram"><i class="fab fa-instagram"></i></a>{% endif %}
+                {% if author.whatsapp_number %}<a href="https://wa.me/{{ author.whatsapp_number }}" target="_blank" rel="noopener noreferrer" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>{% endif %}
+                <a href="mailto:{{ author.email }}" title="{% trans "Email" %}"><i class="fas fa-envelope"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if posts %}
+<section class="related-posts-section-fullwidth">
+    <div class="container mx-auto px-4 py-8">
+        <div class="section-header fade-in-element">
+            <div class="section-badge">
+                <i class="fas fa-newspaper"></i>
+                <span>{% trans "Publicações" %}</span>
+            </div>
+            <h3 class="section-title">{% trans "Artigos de" %} {{ author.first_name }}</h3>
+            <p class="section-subtitle">{% trans "Navegue pelas publicações mais recentes de" %} {{ author.full_name }}</p>
+        </div>
+    </div>
+    <div class="carousel-fullwidth-wrapper">
+        <div class="carousel-fullwidth-container" id="component-carousel-container">
+            <div class="carousel-fullwidth-track">
+                
+                {% for post in posts %}
+                <div class="related-post-card-fullwidth carousel-slide">
+                    <a href="{{ post.get_absolute_url }}" class="card-link-fullwidth">
+                        {% if post.thumbnail %}
+                        <div class="card-image-wrapper-fullwidth">
+                            <img src="{{ post.thumbnail.url }}" alt="{{ post.title }}" class="card-image-fullwidth">
+                        </div>
+                        {% endif %}
+                        <div class="card-content-fullwidth">
+                            {% if post.category %}<span class="card-category-fullwidth" style="color: {{ post.category.color|default:'#64748b' }};">{{ post.category.name }}</span>{% endif %}
+                            <h4 class="card-title-fullwidth">{{ post.title }}</h4>
+                            
+                            {# ✅ AQUI ESTÁ A CORREÇÃO: Adicionado o filtro |safe no final da cadeia. #}
+                            <p class="card-excerpt-fullwidth">{{ post.content|striptags|truncatewords:15|safe }}</p>
+
+                            <div class="card-read-more"><span class="read-more-btn-fullwidth">{% trans "Ler mais" %} <i class="fas fa-arrow-right"></i></span></div>
+                            <div class="card-meta-fullwidth">
+                                <span class="card-author-fullwidth">{{ post.author.first_name }}</span>
+                                <span class="card-separator-fullwidth">•</span>
+                                <time class="card-date-fullwidth">{{ post.created_at|date:"d M, Y" }}</time>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+
+            </div>
+        </div>
+        <div class="carousel-controls-fullwidth">
+            <button class="carousel-btn-fullwidth prev-btn-fullwidth" id="component-carousel-prev-btn" aria-label="{% trans "Anterior" %}"><i class="fas fa-chevron-left"></i></button>
+            <button class="carousel-btn-fullwidth next-btn-fullwidth" id="component-carousel-next-btn" aria-label="{% trans "Próximo" %}"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+    <div class="container mx-auto px-4"><div class="carousel-indicators-fullwidth" id="component-carousel-indicators"></div></div>
+</section>
+{% else %}
+    <div class="container mx-auto px-4 py-16 text-center">
+        <p class="text-secondary py-12">
+            {% blocktrans with author_name=author.first_name %}
+                {{ author_name }} ainda não publicou nenhum artigo.
+            {% endblocktrans %}
+        </p>
+    </div>
+{% endif %}
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // =============================
+    //   SCRIPT DO AVATAR (CANVAS)
+    // =============================
+    const canvas = document.getElementById('avatarCanvas');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const size = canvas.width;
+        const initial = "{{ author.first_name|first|upper|default:'?' }}";
+
+        ctx.fillStyle = '#e5e7eb'; // Cor de fundo do círculo
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#4b5563'; // Cor da letra
+        ctx.font = `bold ${size * 0.5}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(initial, size / 2, size / 2 + (size * 0.05));
+    }
+
+    // =============================
+    //      SCRIPT DO CARROSSEL
+    // =============================
+    const carousel = document.getElementById('component-carousel-container');
+    if (carousel) {
+        const track = carousel.querySelector('.carousel-fullwidth-track');
+        const slides = Array.from(track.children);
+        const nextButton = document.getElementById('component-carousel-next-btn');
+        const prevButton = document.getElementById('component-carousel-prev-btn');
+        const indicatorsContainer = document.getElementById('component-carousel-indicators');
+        let indicators = [];
+        
+        if (slides.length <= 1) { 
+            if(indicatorsContainer) indicatorsContainer.style.display = 'none'; 
+            if(nextButton) nextButton.style.display = 'none'; 
+            if(prevButton) prevButton.style.display = 'none'; 
+            return;
+        }
+
+        slides.forEach((slide, index) => { 
+            const button = document.createElement('button'); 
+            button.classList.add('carousel-indicator-fullwidth'); 
+            if (indicatorsContainer) {
+                indicatorsContainer.appendChild(button); 
+                indicators.push(button); 
+                button.addEventListener('click', () => { 
+                    slide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); 
+                });
+            }
+        });
+
+        const updateControls = () => {
+            if (!carousel || !track) return;
+            const scrollLeft = carousel.scrollLeft;
+            const scrollWidth = carousel.scrollWidth;
+            const width = carousel.clientWidth;
+            
+            if(prevButton) prevButton.disabled = scrollLeft < 10; 
+            if(nextButton) nextButton.disabled = scrollLeft > (scrollWidth - width - 10); 
+            
+            const carouselCenter = scrollLeft + width / 2;
+            let activeIndex = 0;
+            let closestDistance = Infinity;
+
+            slides.forEach((slide, index) => {
+                const slideCenter = slide.offsetLeft - track.offsetLeft + slide.offsetWidth / 2;
+                const distance = Math.abs(carouselCenter - slideCenter);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    activeIndex = index;
+                }
+            });
+
+            indicators.forEach((ind, i) => ind.classList.toggle('active', i === activeIndex)); 
+        };
+        
+        if(nextButton) { 
+            nextButton.addEventListener('click', () => { 
+                const slideWidth = slides[0].offsetWidth; 
+                const gap = parseInt(window.getComputedStyle(track).gap); 
+                carousel.scrollBy({ left: slideWidth + gap, behavior: 'smooth' }); 
+            }); 
+        }
+
+        if(prevButton) { 
+            prevButton.addEventListener('click', () => { 
+                const slideWidth = slides[0].offsetWidth; 
+                const gap = parseInt(window.getComputedStyle(track).gap); 
+                carousel.scrollBy({ left: -(slideWidth + gap), behavior: 'smooth' }); 
+            }); 
+        }
+        
+        let debounceTimer;
+        carousel.addEventListener('scroll', () => { 
+            clearTimeout(debounceTimer); 
+            debounceTimer = setTimeout(updateControls, 50); 
+        });
+
+        updateControls();
+    }
+});
+</script>
+{% endblock %}

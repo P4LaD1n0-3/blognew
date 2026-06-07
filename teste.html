@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vogue Weddings | Luxury Wedding Inspiration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            /* Paleta 1 - Tons Terrosos Sofisticados */
+            --color-primary: #D8C4B6;
+            --color-secondary: #F5EFE6;
+            --color-accent: #A27B5C;
+            --color-dark: #3F4E4F;
+            --color-text: #2D3436;
+            
+            /* Paleta 2 - Azuis Suaves */
+            /* --color-primary: #E1F5FE;
+            --color-secondary: #B3E5FC;
+            --color-accent: #4FC3F7;
+            --color-dark: #0277BD;
+            --color-text: #01579B; */
+            
+            /* Paleta 3 - Rosas Pálidos */
+            /* --color-primary: #FCE4EC;
+            --color-secondary: #F8BBD0;
+            --color-accent: #F48FB1;
+            --color-dark: #AD1457;
+            --color-text: #880E4F; */
+            
+            /* Paleta 4 - Verdes Suaves */
+            /* --color-primary: #E8F5E9;
+            --color-secondary: #C8E6C9;
+            --color-accent: #81C784;
+            --color-dark: #2E7D32;
+            --color-text: #1B5E20; */
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--color-text);
+            background-color: var(--color-secondary);
+        }
+        
+        .serif {
+            font-family: 'Cormorant Garamond', serif;
+        }
+        
+        .hero-image {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+            background-size: cover;
+            background-position: center;
+            height: 80vh;
+        }
+        
+        .nav-hover:hover {
+            color: var(--color-accent);
+            transition: all 0.3s ease;
+        }
+        
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+        
+        .article-card:hover img {
+            transform: scale(1.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .article-card:hover .article-title {
+            color: var(--color-accent);
+            transition: color 0.3s ease;
+        }
+        
+        .gold-hover:hover {
+            color: var(--color-accent);
+            transition: color 0.3s ease;
+        }
+        
+        .scroll-hidden {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .scroll-hidden::-webkit-scrollbar {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-image {
+                height: 60vh;
+            }
+            
+            .mobile-menu {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .mobile-menu.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+    <!-- Top Bar -->
+    <div class="bg-[var(--color-dark)] text-[var(--color-secondary)] text-xs py-2 px-4 flex justify-between items-center">
+        <div class="flex space-x-4">
+            <a href="#" class="hover:text-gray-300">SIGN IN</a>
+            <a href="#" class="hover:text-gray-300">SUBSCRIBE</a>
+        </div>
+        <div class="hidden md:flex space-x-4">
+            <a href="#" class="hover:text-gray-300"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="hover:text-gray-300"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="hover:text-gray-300"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="hover:text-gray-300"><i class="fab fa-pinterest"></i></a>
+        </div>
+    </div>
+    
+    <!-- Main Navigation -->
+    <header class="border-b border-gray-200 sticky top-0 bg-white z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-8">
+                <a href="#" class="text-2xl font-bold serif">VOGUE</a>
+                <nav class="hidden lg:flex space-x-6">
+                    <div class="dropdown relative">
+                        <a href="#" class="nav-hover">FASHION</a>
+                        <div class="dropdown-menu absolute hidden bg-white shadow-lg py-2 w-48">
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Runway</a>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Trends</a>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Designers</a>
+                        </div>
+                    </div>
+                    <div class="dropdown relative">
+                        <a href="#" class="nav-hover">BEAUTY</a>
+                        <div class="dropdown-menu absolute hidden bg-white shadow-lg py-2 w-48">
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Makeup</a>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Hair</a>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Skincare</a>
+                        </div>
+                    </div>
+                    <a href="#" class="nav-hover font-semibold text-black">WEDDINGS</a>
+                    <a href="#" class="nav-hover">CULTURE</a>
+                    <a href="#" class="nav-hover">LIVING</a>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="lg:hidden" id="mobile-menu-button">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <button class="hidden lg:block">
+                    <i class="fas fa-search text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Mobile Menu -->
+    <div class="mobile-menu fixed inset-0 bg-white z-50 overflow-y-auto lg:hidden pt-20 px-6" id="mobile-menu">
+        <button class="absolute top-4 right-4 text-2xl" id="close-menu">
+            <i class="fas fa-times"></i>
+        </button>
+        <nav class="flex flex-col space-y-6 text-xl">
+            <a href="#" class="border-b border-gray-200 pb-4">FASHION</a>
+            <a href="#" class="border-b border-gray-200 pb-4">BEAUTY</a>
+            <a href="#" class="border-b border-gray-200 pb-4 font-semibold">WEDDINGS</a>
+            <a href="#" class="border-b border-gray-200 pb-4">CULTURE</a>
+            <a href="#" class="border-b border-gray-200 pb-4">LIVING</a>
+            <div class="flex space-x-6 text-2xl pt-4">
+                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-pinterest"></i></a>
+            </div>
+        </nav>
+    </div>
+    
+    <!-- Hero Section -->
+    <section class="hero-image flex items-end relative">
+        <div class="container mx-auto px-4 pb-16 text-white z-10">
+            <span class="text-sm uppercase tracking-widest">Wedding Dresses</span>
+            <h1 class="serif text-4xl md:text-6xl font-bold mt-2 mb-6">The Most Stunning Wedding Dresses of 2023</h1>
+            <p class="max-w-2xl text-lg mb-8">From romantic ballgowns to sleek minimalist designs, discover the bridal looks that will define this year's weddings.</p>
+            <a href="#" class="inline-block border border-white px-8 py-3 hover:bg-white hover:text-black transition duration-300">View Gallery</a>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black to-transparent opacity-30"></div>
+    </section>
+    
+    <!-- Trending Now -->
+    <section class="py-12 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="serif text-3xl font-bold">Trending Now</h2>
+                <a href="#" class="text-sm uppercase tracking-wider gold-hover">View All</a>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Article 1 -->
+                <div class="article-card group overflow-hidden">
+                    <div class="overflow-hidden mb-4">
+                        <img src="https://images.unsplash.com/photo-1529633980621-3a822a17fce1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Wedding dress" class="w-full h-64 object-cover">
+                    </div>
+                    <span class="text-xs uppercase tracking-widest text-gray-500">Dresses</span>
+                    <h3 class="article-title serif text-xl font-bold my-2">The Rise of Non-Traditional Wedding Dresses</h3>
+                    <p class="text-gray-600 text-sm">How modern brides are breaking traditions with bold color choices and unconventional silhouettes.</p>
+                </div>
+                
+                <!-- Article 2 -->
+                <div class="article-card group overflow-hidden">
+                    <div class="overflow-hidden mb-4">
+                        <img src="https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Wedding venue" class="w-full h-64 object-cover">
+                    </div>
+                    <span class="text-xs uppercase tracking-widest text-gray-500">Venues</span>
+                    <h3 class="article-title serif text-xl font-bold my-2">10 Most Instagrammable Wedding Venues in Europe</h3>
+                    <p class="text-gray-600 text-sm">From Italian villas to French chateaus, these breathtaking locations will make your wedding unforgettable.</p>
+                </div>
+                
+                <!-- Article 3 -->
+                <div class="article-card group overflow-hidden">
+                    <div class="overflow-hidden mb-4">
+                        <img src="https://images.unsplash.com/photo-1511285568869-2b6c0de72629?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Wedding rings" class="w-full h-64 object-cover">
+                    </div>
+                    <span class="text-xs uppercase tracking-widest text-gray-500">Jewelry</span>
+                    <h3 class="article-title serif text-xl font-bold my-2">Sustainable Wedding Rings: Ethical Choices for Modern Couples</h3>
+                    <p class="text-gray-600 text-sm">Discover lab-grown diamonds and recycled metals that don't compromise on luxury.</p>
+                </div>
+                
+                <!-- Article 4 -->
+                <div class="article-card group overflow-hidden">
+                    <div class="overflow-hidden mb-4">
+                        <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Wedding makeup" class="w-full h-64 object-cover">
+                    </div>
+                    <span class="text-xs uppercase tracking-widest text-gray-500">Beauty</span>
+                    <h3 class="article-title serif text-xl font-bold my-2">Bridal Makeup Trends: The Looks That Will Dominate This Season</h3>
+                    <p class="text-gray-600 text-sm">Celebrity makeup artists reveal the techniques and products for a flawless wedding day look.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Featured Story -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col lg:flex-row items-center">
+                <div class="lg:w-1/2 lg:pr-12 mb-8 lg:mb-0">
+                    <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Featured story" class="w-full h-auto">
+                </div>
+                <div class="lg:w-1/2">
+                    <span class="text-xs uppercase tracking-widest text-gray-500">Featured Story</span>
+                    <h2 class="serif text-3xl md:text-4xl font-bold my-4">Real Weddings: An Intimate Tuscan Villa Celebration</h2>
+                    <p class="text-gray-600 mb-6">When fashion designer Alessandra and art curator Luca decided to tie the knot, they envisioned a celebration that blended Italian tradition with contemporary elegance. Their three-day wedding in the rolling hills of Tuscany became the talk of the season.</p>
+                    <p class="text-gray-600 mb-8">From the hand-painted invitations to the locally-sourced five-course meal, every detail reflected their shared love of art and sustainability. The bride's custom-made gown, featuring fabric woven from recycled materials, set a new standard for eco-conscious bridal fashion.</p>
+                    <a href="#" class="inline-block border border-[var(--color-dark)] px-8 py-3 hover:bg-[var(--color-dark)] hover:text-[var(--color-secondary)] transition duration-300">Read Full Story</a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Gallery Section -->
+    <section class="py-12 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="serif text-3xl font-bold">Wedding Inspiration</h2>
+                <a href="#" class="text-sm uppercase tracking-wider gold-hover">View All Galleries</a>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div class="relative group overflow-hidden h-64">
+                    <img src="https://images.unsplash.com/photo-1511285568869-2b6c0de72629?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Gallery image" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition duration-300 flex items-center justify-center">
+                        <span class="text-white opacity-0 group-hover:opacity-100 transition duration-300 text-lg font-medium">Bridal Jewelry</span>
+                    </div>
+                </div>
+                <div class="relative group overflow-hidden h-64">
+                    <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Gallery image" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition duration-300 flex items-center justify-center">
+                        <span class="text-white opacity-0 group-hover:opacity-100 transition duration-300 text-lg font-medium">Makeup Looks</span>
+                    </div>
+                </div>
+                <div class="relative group overflow-hidden h-64">
+                    <img src="https://images.unsplash.com/photo-1529633980621-3a822a17fce1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Gallery image" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition duration-300 flex items-center justify-center">
+                        <span class="text-white opacity-0 group-hover:opacity-100 transition duration-300 text-lg font-medium">Dress Trends</span>
+                    </div>
+                </div>
+                <div class="relative group overflow-hidden h-64">
+                    <img src="https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" alt="Gallery image" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition duration-300 flex items-center justify-center">
+                        <span class="text-white opacity-0 group-hover:opacity-100 transition duration-300 text-lg font-medium">Venues</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Newsletter -->
+    <section class="py-16 bg-[var(--color-dark)] text-[var(--color-secondary)]">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="serif text-3xl font-bold mb-4">Wedding Inspiration Delivered</h2>
+            <p class="max-w-2xl mx-auto mb-8">Sign up for our weekly newsletter to receive the latest wedding trends, real wedding features, and expert advice straight to your inbox.</p>
+            <form class="max-w-md mx-auto flex">
+                <input type="email" placeholder="Your email address" class="flex-grow px-4 py-3 text-black">
+                <button type="submit" class="bg-white text-black px-6 py-3 hover:bg-gray-200 transition duration-300">Subscribe</button>
+            </form>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-100 py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <h3 class="serif text-lg font-bold mb-4">VOGUE</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-black">About Us</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-black">Contact</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-black">Careers</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-black">Advertise</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="serif text-lg font-bold mb-4">WEDDINGS</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-black">Dresses</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-black">Planning</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-black">Venues</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-black">Real Weddings</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="serif text-lg font-bold mb-4">SERVICES</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-black">Vogue Weddings Club</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-black">Vendor Directory</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-black">Wedding Checklist</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-black">Budget Calculator</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="serif text-lg font-bold mb-4">CONNECT</h3>
+                    <div class="flex space-x-4 mb-4">
+                        <a href="#" class="text-gray-600 hover:text-black text-xl"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-gray-600 hover:text-black text-xl"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-600 hover:text-black text-xl"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-600 hover:text-black text-xl"><i class="fab fa-pinterest"></i></a>
+                    </div>
+                    <p class="text-gray-600">Download our app:</p>
+                    <div class="flex space-x-2 mt-2">
+                        <a href="#" class="bg-black text-white px-3 py-1 rounded text-sm">App Store</a>
+                        <a href="#" class="bg-black text-white px-3 py-1 rounded text-sm">Google Play</a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-300 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-600 text-sm mb-4 md:mb-0">© 2023 Condé Nast. All rights reserved.</p>
+                <div class="flex space-x-4 text-sm">
+                    <a href="#" class="text-gray-600 hover:text-black">Terms of Use</a>
+                    <a href="#" class="text-gray-600 hover:text-black">Privacy Policy</a>
+                    <a href="#" class="text-gray-600 hover:text-black">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const closeMenuButton = document.getElementById('close-menu');
+        
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        });
+        
+        closeMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.remove('open');
+            document.body.style.overflow = 'auto';
+        });
+        
+        // Close menu when clicking outside
+        mobileMenu.addEventListener('click', (e) => {
+            if (e.target === mobileMenu) {
+                mobileMenu.classList.remove('open');
+                document.body.style.overflow = 'auto';
+            }
+        });
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop,
+                        behavior: 'smooth'
+                    });
+                    
+                    // Close mobile menu if open
+                    if (mobileMenu.classList.contains('open')) {
+                        mobileMenu.classList.remove('open');
+                        document.body.style.overflow = 'auto';
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

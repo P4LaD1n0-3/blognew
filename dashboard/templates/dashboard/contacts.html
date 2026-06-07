@@ -1,0 +1,84 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Contatos{% endblock %}
+{% block breadcrumb %}<span class="mx-2 text-slate-300">/</span> Contatos{% endblock %}
+{% block page_heading %}Mensagens de Contato{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
+    <form method="get" class="flex gap-2">
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"><i class="fas fa-search"></i></span>
+        <input type="text" name="q" value="{{ search_q }}"
+               class="pl-9 pr-4 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-56"
+               placeholder="Buscar por nome ou email...">
+      </div>
+    </form>
+    <div class="ml-auto flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5">
+      <i class="fas fa-lock text-amber-500 text-xs"></i>
+      <span class="text-xs text-amber-700">Somente leitura</span>
+    </div>
+  </div>
+
+  {% if page_obj.object_list %}
+  <div class="divide-y divide-slate-100">
+    {% for contact in page_obj %}
+    <div class="px-6 py-4 hover:bg-slate-50/70 transition-colors" x-data="{ open: false }">
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <span class="text-white font-bold text-sm">{{ contact.name|slice:":1"|upper }}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-3 mb-0.5">
+            <p class="font-semibold text-slate-900 text-sm">{{ contact.name }}</p>
+            <span class="text-xs text-slate-400">{{ contact.submitted_at|date:"d/m/Y H:i" }}</span>
+          </div>
+          <a href="mailto:{{ contact.email }}" class="text-xs text-indigo-600 hover:underline">{{ contact.email }}</a>
+          <p class="text-sm text-slate-600 mt-2 line-clamp-2">{{ contact.message }}</p>
+          {% if contact.message|length > 120 %}
+          <button @click="open = !open" class="text-xs text-indigo-600 hover:text-indigo-800 mt-1">
+            <span x-text="open ? 'Mostrar menos' : 'Ler mensagem completa'"></span>
+          </button>
+          <div x-show="open" x-cloak class="mt-2 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 leading-relaxed">
+            {{ contact.message }}
+          </div>
+          {% endif %}
+        </div>
+        <a href="mailto:{{ contact.email }}"
+           class="flex-shrink-0 flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 px-3 py-1.5 rounded-xl transition-colors">
+          <i class="fas fa-reply text-xs"></i> Responder
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-between">
+    <p class="text-sm text-slate-500">Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}"
+           class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">
+          <i class="fas fa-chevron-left text-xs"></i>
+        </a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}"
+           class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">
+          <i class="fas fa-chevron-right text-xs"></i>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="py-16 text-center">
+    <i class="fas fa-inbox text-slate-200 text-5xl mb-4"></i>
+    <p class="text-slate-500 font-medium">Nenhuma mensagem ainda</p>
+    <p class="text-slate-400 text-sm mt-1">As mensagens do formulário de contato aparecerão aqui</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,330 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+/* ── AI spinner ──────────────────────────────────────────── */
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+.ai-spinner {
+  display: inline-block; width: 13px; height: 13px;
+  border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+  border-radius: 50%; animation: ai-spin .7s linear infinite;
+  vertical-align: middle;
+}
+
+/* ── Colunas principais: editor ocupa 100% da largura ─────── */
+/* Jazzmin não usa .change-form; estes seletores diretos funcionam */
+.col-lg-9 { flex: 0 0 100% !important; max-width: 100% !important; order: 1 !important; }
+.col-lg-3 { flex: 0 0 100% !important; max-width: 100% !important; order: 2 !important; }
+.col-lg-3 .sticky-top { position: static !important; }
+
+/* ── Campo "content": .field-content É o próprio .row ─────── */
+/* Empilha label acima do editor, editor toma 100% da largura  */
+.field-content { flex-wrap: wrap !important; }
+.field-content > label,
+.field-content > .col-form-label,
+.field-content > [class*="col-sm-3"],
+.field-content > [class*="col-md-3"] {
+  flex: 0 0 100% !important; max-width: 100% !important;
+  text-align: left !important; padding-bottom: 6px !important;
+}
+.field-content > div,
+.field-content > [class*="col-sm-9"],
+.field-content > [class*="col-md-9"] {
+  flex: 0 0 100% !important; max-width: 100% !important;
+}
+
+/* TinyMCE full-width */
+.tox-tinymce, .mce-tinymce { width: 100% !important; }
+</style>
+
+<script>
+/* ── Layout + Ícones de Abas + Resize do TinyMCE ─────────────
+   JavaScript garante o efeito mesmo quando o CSS não encontra
+   o seletor exato do template Jazzmin instalado.
+   ─────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* 1. Expandir col-lg-9 / col-lg-3 via JS */
+    document.querySelectorAll('.col-lg-9').forEach(function(el) {
+        el.style.setProperty('flex',      '0 0 100%', 'important');
+        el.style.setProperty('max-width', '100%',     'important');
+        el.style.order = '1';
+    });
+    document.querySelectorAll('.col-lg-3').forEach(function(el) {
+        el.style.setProperty('flex',      '0 0 100%', 'important');
+        el.style.setProperty('max-width', '100%',     'important');
+        el.style.order = '2';
+    });
+
+    /* 2. Expandir campo "content" — empilhar label + editor */
+    var cf = document.querySelector('.field-content');
+    if (cf) {
+        cf.style.flexWrap = 'wrap';
+        [].slice.call(cf.children).forEach(function(child) {
+            child.style.setProperty('flex',      '0 0 100%', 'important');
+            child.style.setProperty('max-width', '100%',     'important');
+        });
+    }
+
+    /* 3. Adicionar ícones Font Awesome nas abas do formulário */
+    var tabIcons = {
+        'Conteúdo Principal':  'fas fa-pen-alt',
+        'Organização e Mídia': 'fas fa-photo-video',
+        'Publicação':          'fas fa-paper-plane',
+        'SEO':                 'fas fa-chart-line',
+        'Palavras-chave':      'fas fa-tags'
+    };
+    document.querySelectorAll('.nav-tabs .nav-link, .nav-pills .nav-link').forEach(function(link) {
+        /* Pula links que já têm ícone */
+        if (link.querySelector('i.fas')) return;
+        var text = link.textContent.trim();
+        for (var key in tabIcons) {
+            if (text.indexOf(key) !== -1) {
+                link.innerHTML = '<i class="' + tabIcons[key] + ' mr-1"></i> ' + text;
+                break;
+            }
+        }
+    });
+
+    /* 4. Forçar TinyMCE a reflow após a mudança de layout */
+    function resizeTMCE() {
+        if (typeof tinymce === 'undefined') return;
+        tinymce.editors.forEach(function(ed) {
+            try {
+                var w = ed.getWin();
+                if (w) w.dispatchEvent(new Event('resize'));
+                var cnt = ed.getContainer();
+                if (cnt) cnt.style.width = '100%';
+            } catch (e) {}
+        });
+    }
+    setTimeout(resizeTMCE, 400);
+    setTimeout(resizeTMCE, 1100);
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    var toolbar   = document.getElementById('ai-admin-toolbar');
+    var statusEl  = document.getElementById('ai-toolbar-status');
+    var btnFormat = document.getElementById('btn-ai-format');
+    var btnTrans  = document.getElementById('btn-ai-translate');
+    var btnSEO    = document.getElementById('btn-ai-seo');
+    var postPk    = toolbar ? toolbar.dataset.postPk : '';
+
+    var URL_FORMAT    = '{% url "custom_admin:ai_format_content" %}';
+    var URL_TRANSLATE = '{% url "custom_admin:ai_translate_post" %}';
+    var URL_SEO       = '{% url "custom_admin:ai_generate_seo" %}';
+    var URL_SETTINGS  = '{% url "custom_admin:ai_settings" %}';
+
+    /* ── Helpers ─────────────────────────────────────────────── */
+
+    function getCsrf() {
+        var el = document.querySelector('[name=csrfmiddlewaretoken]');
+        return el ? el.value : '';
+    }
+
+    function getContentEditor() {
+        if (typeof tinymce === 'undefined') return null;
+        var textareas = document.querySelectorAll('textarea');
+        for (var i = 0; i < textareas.length; i++) {
+            var ta = textareas[i];
+            if (ta.id && ta.id.toLowerCase().indexOf('content') !== -1) {
+                var ed = tinymce.get(ta.id);
+                if (ed) return ed;
+            }
+        }
+        var all = tinymce.editors;
+        if (all && all.length) return all[0];
+        return null;
+    }
+
+    function getEditorContent() {
+        var ed = getContentEditor();
+        if (ed) return ed.getContent();
+        var ta = document.querySelector('textarea[id*="content"], textarea[name*="content"]');
+        return ta ? ta.value : '';
+    }
+
+    function setEditorContent(html) {
+        var ed = getContentEditor();
+        if (ed) {
+            ed.setContent(html);
+            if (typeof ed.save === 'function') ed.save();
+            return true;
+        }
+        var ta = document.querySelector('textarea[id*="content"], textarea[name*="content"]');
+        if (ta) { ta.value = html; return true; }
+        return false;
+    }
+
+    function findField(name) {
+        var ids = ['id_' + name, 'id_translations-0-' + name];
+        for (var i = 0; i < ids.length; i++) {
+            var el = document.getElementById(ids[i]);
+            if (el) return el;
+        }
+        return document.querySelector('[name="' + name + '"], [name$="-' + name + '"]') || null;
+    }
+
+    function getFieldValue(name) {
+        var el = findField(name);
+        return el ? el.value : '';
+    }
+
+    function setFieldValue(name, value) {
+        var el = findField(name);
+        if (!el) return false;
+        el.value = value;
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        el.dispatchEvent(new Event('input',  { bubbles: true }));
+        return true;
+    }
+
+    function setStatus(type, text) {
+        if (!statusEl) return;
+        var colors = { loading:'#94a3b8', success:'#4ade80', error:'#f87171', info:'#60a5fa' };
+        statusEl.style.color = colors[type] || '#94a3b8';
+        /* For API key errors, render a clickable link */
+        if (type === 'error' && text && text.toLowerCase().indexOf('chave api') !== -1) {
+            statusEl.innerHTML = '✗ Sem chave API. <a href="' + URL_SETTINGS + '" style="color:#f87171;text-decoration:underline;font-weight:700;">Configurar agora →</a>';
+        } else {
+            statusEl.textContent = text;
+        }
+        if (type !== 'loading') {
+            setTimeout(function () { statusEl.textContent = ''; statusEl.innerHTML = ''; }, 10000);
+        }
+    }
+
+    function setBtnLoading(btn, loading) {
+        if (loading) {
+            btn._origHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="ai-spinner"></span> Processando…';
+        } else {
+            btn.disabled = false;
+            if (btn._origHTML) btn.innerHTML = btn._origHTML;
+        }
+    }
+
+    function aiPost(url, params, onSuccess, btn) {
+        setBtnLoading(btn, true);
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrf(),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(params),
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { onSuccess(data); })
+        .catch(function (err) { setStatus('error', '✗ Erro de rede: ' + err.message); })
+        .finally(function () { setBtnLoading(btn, false); });
+    }
+
+    /* ── Formatar Conteúdo ───────────────────────────────────── */
+    if (btnFormat) {
+        btnFormat.addEventListener('click', function () {
+            var content = getEditorContent();
+            if (!content.trim()) { setStatus('error', 'O conteúdo está vazio.'); return; }
+            setStatus('loading', 'Formatando conteúdo com IA… aguarde ~30s.');
+            aiPost(URL_FORMAT, { content: content, title: getFieldValue('title') }, function (data) {
+                if (data.status === 'success') {
+                    setEditorContent(data.html);
+                    var themeName = data.theme ? ' — tema: ' + data.theme : '';
+                    setStatus('success', '✓ Formatado com sucesso!' + themeName);
+                } else {
+                    setStatus('error', '✗ ' + (data.error || 'Erro desconhecido'));
+                }
+            }, btnFormat);
+        });
+    }
+
+    /* ── Traduzir EN / ES / FR ───────────────────────────────── */
+    if (btnTrans) {
+        btnTrans.addEventListener('click', function () {
+            if (!postPk) {
+                setStatus('error', 'Salve o post primeiro para poder traduzir.');
+                return;
+            }
+            if (!confirm('Traduzir este post para Inglês, Espanhol e Francês usando IA?\n\nO processo levará 1–3 minutos em segundo plano.')) return;
+            setStatus('loading', 'Tradução iniciada em segundo plano…');
+            aiPost(URL_TRANSLATE, { post_id: postPk }, function (data) {
+                if (data.status === 'started') {
+                    setStatus('info', '⟳ ' + data.message);
+                } else {
+                    setStatus('error', '✗ ' + (data.error || 'Erro'));
+                }
+            }, btnTrans);
+        });
+    }
+
+    /* ── Gerar SEO + Keywords ────────────────────────────────── */
+    if (btnSEO) {
+        btnSEO.addEventListener('click', function () {
+            var title   = getFieldValue('title');
+            var content = getEditorContent();
+            if (!title && !content.trim()) {
+                setStatus('error', 'Preencha o título ou conteúdo primeiro.');
+                return;
+            }
+            setStatus('loading', 'Gerando SEO com IA… aguarde ~20s.');
+            aiPost(URL_SEO, { title: title, content: content }, function (data) {
+                if (data.status === 'success') {
+                    if (data.meta_title)       setFieldValue('meta_title',       data.meta_title);
+                    if (data.meta_description) setFieldValue('meta_description', data.meta_description);
+                    if (data.keywords) {
+                        setFieldValue('keywords', data.keywords);
+                        /* Expande o fieldset colapsado de palavras-chave */
+                        var kwEl = findField('keywords');
+                        if (kwEl) {
+                            var fs = kwEl.closest('fieldset');
+                            if (fs && fs.classList.contains('collapsed')) {
+                                var toggle = fs.querySelector('h2 a');
+                                if (toggle) toggle.click();
+                                else fs.classList.remove('collapsed');
+                            }
+                        }
+                    }
+                    setStatus('success', '✓ SEO gerado! Meta title, descrição e palavras-chave preenchidos.');
+                } else {
+                    setStatus('error', '✗ ' + (data.error || 'Erro desconhecido'));
+                }
+            }, btnSEO);
+        });
+    }
+
+});
+</script>
+{% endblock %}
+
+{% block field_sets %}
+<div id="ai-admin-toolbar" data-post-pk="{{ original.pk|default:'' }}" class="d-flex align-items-center mb-3 p-3 border rounded bg-light">
+    <strong class="mr-3 text-success">🤖 IA Admin</strong>
+
+    <button type="button" class="btn btn-success btn-sm mr-2" id="btn-ai-format">
+        ✨ Formatar Conteúdo
+    </button>
+
+    <button type="button" class="btn btn-primary btn-sm mr-2" id="btn-ai-translate">
+        🌍 Traduzir EN / ES / FR
+    </button>
+
+    <button type="button" class="btn btn-warning btn-sm mr-2" id="btn-ai-seo">
+        🔍 Gerar SEO + Keywords
+    </button>
+
+    <span id="ai-toolbar-status" class="ml-2 small"></span>
+
+    <a href="{% url 'custom_admin:ai_settings' %}"
+       class="btn btn-outline-secondary btn-sm ml-auto"
+       title="Configurações de IA">
+        ⚙️
+    </a>
+</div>
+{{ block.super }}
+{% endblock %}

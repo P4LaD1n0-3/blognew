@@ -1,0 +1,40 @@
+{% extends "blog/base.html" %}
+{% load static i18n %}
+
+{% comment %}
+  Este template é usado automaticamente pelo Django em produção (DEBUG=False)
+  quando uma URL não é encontrada. Ele herda o cabeçalho, rodapé e estilos
+  do seu site para uma experiência de usuário consistente.
+{% endcomment %}
+
+{% block page_title %}{% trans "Página Não Encontrada" %} - {{ site_settings.site_name }}{% endblock page_title %}
+
+{% block content %}
+<div class="page-content">
+    <div class="section-bg-2 py-20">
+        <div class="container mx-auto px-4 text-center">
+            
+            <div class="max-w-2xl mx-auto">
+                
+                <h1 class="text-6xl md:text-8xl font-bold text-indigo-600 mb-4">
+                    404
+                </h1>
+                
+                <h2 class="text-3xl md:text-4xl font-bold text-heading mb-4">
+                    {% trans "Página Não Encontrada" %}
+                </h2>
+                
+                <p class="text-lg text-secondary mb-10">
+                    {% trans "Oops! Parece que a página que você está procurando não existe ou foi movida para outro local." %}
+                </p>
+                
+                <a href="{% url 'blog:home' %}" class="submit-button inline-block">
+                    <i class="fas fa-home mr-2"></i> {% trans "Voltar para a Página Inicial" %}
+                </a>
+            
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock content %}

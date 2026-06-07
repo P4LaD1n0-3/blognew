@@ -1,0 +1,139 @@
+/* static/assets/css/footer.css */
+.site-footer {
+    background-color: transparent;
+    border-top: 1px solid var(--border-color);
+    padding: 2.5rem 1rem;
+    margin-top: 3rem;
+    color: var(--text-secondary);
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+}
+
+.footer-brand h3 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-heading);
+    margin: 0 0 0.5rem 0;
+}
+
+.footer-copyright {
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.footer-right-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1.5rem;
+}
+
+.footer-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 1.5rem;
+}
+
+.footer-nav a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.footer-nav a:hover {
+    color: var(--color-accent);
+}
+
+.footer-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 1.5rem;
+}
+
+.social-links {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.social-links a {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.social-links a:hover {
+    color: var(--text-heading);
+    transform: translateY(-2px);
+}
+
+.language-switcher form {
+    display: flex;
+    align-items: center;
+    background-color: transparent;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    padding: 0.2rem 0.5rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.language-switcher form:hover {
+    border-color: var(--color-accent);
+}
+
+.language-icon {
+    color: var(--text-secondary);
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.language-switcher select {
+    background-color: transparent;
+    border: none;
+    color: var(--text-heading);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.2rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.language-switcher select:focus {
+    outline: none;
+}
+
+/* Media query para telas pequenas (mobile) */
+@media (max-width: 767px) {
+    .footer-container,
+    .footer-right-content,
+    .footer-nav,
+    .footer-controls {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+    }
+
+    .footer-nav {
+        justify-content: center;
+    }
+}

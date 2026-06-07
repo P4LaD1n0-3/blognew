@@ -1,0 +1,51 @@
+{% load static i18n %}
+
+<footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-brand">
+            <h3>{{ site_settings.site_name }}</h3>
+            
+            <p class="footer-copyright">&copy; {% now "Y" %} {% trans "Todos os direitos reservados." %}</p>
+            
+            <p class="footer-attribution">
+                {% trans "Desenvolvido por " %} <a href="{{ CREATOR_LINKEDIN_URL }}" target="_blank" rel="noopener noreferrer">Wesley Rolim</a>.
+            </p>
+        </div>
+
+        <div class="footer-right-content">
+            <ul class="footer-nav">
+                <li><a href="{% url 'blog:home' %}">{% trans "Início" %}</a></li>
+                <li><a href="{% url 'blog:post_list' %}">{% trans "Artigos" %}</a></li>
+                <li><a href="{% url 'blog:category_list' %}">{% trans "Categorias" %}</a></li>
+                <li><a href="{% url 'blog:about' %}">{% trans "Sobre" %}</a></li>
+            </ul>
+
+            <div class="footer-controls">
+                {% if has_translation_api %}
+                <div class="language-switcher">
+                    <form action="{% url 'set_language' %}" method="post">
+                        {% csrf_token %}
+                        <input name="next" type="hidden" value="{{ request.path }}">
+                        <i class="fas fa-globe language-icon"></i>
+                        <select name="language" onchange="this.form.submit()" aria-label="{% trans "Selecionar idioma" %}">
+                            {% get_current_language as LANGUAGE_CODE %}
+                            {% get_available_languages as LANGUAGES %}
+                            {% for lang_code, lang_name in LANGUAGES %}
+                                <option value="{{ lang_code }}" {% if lang_code == LANGUAGE_CODE %}selected{% endif %}>
+                                    {{ lang_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+                {% endif %}
+
+                <div class="social-links">
+                    {% if site_settings.linkedin_url %}<a href="{{ site_settings.linkedin_url }}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>{% endif %}
+                    {% if site_settings.instagram_url %}<a href="{{ site_settings.instagram_url }}" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram"><i class="fab fa-instagram"></i></a>{% endif %}
+                    {% if site_settings.whatsapp_number %}<a href="https://wa.me/{{ site_settings.whatsapp_number }}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,424 @@
+# English translations for Modern Blog.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Modern Blog package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Modern Blog 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-14 17:28-0300\n"
+"PO-Revision-Date: 2025-08-14 17:29-0300\n"
+"Last-Translator: Gemini <ai@google.com>\n"
+"Language-Team: English <en@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: blog/forms.py:15 blog/templates/blog/partials/header.html:39
+#: blog/templates/blog/partials/header.html:87
+msgid "Buscar artigos..."
+msgstr "Search articles..."
+
+#: blog/forms.py:28
+msgid "Seu nome completo"
+msgstr "Your full name"
+
+#: blog/forms.py:32
+msgid "Seu melhor e-mail"
+msgstr "Your best email"
+
+#: blog/forms.py:36
+msgid "Sua mensagem..."
+msgstr "Your message..."
+
+#: blog/forms.py:51
+msgid "Digite seu melhor e-mail"
+msgstr "Enter your best email"
+
+#: blog/forms.py:53
+msgid "Endereço de e-mail para newsletter"
+msgstr "Email address for newsletter"
+
+#: blog/templates/blog/404.html:10 blog/templates/blog/404.html:24
+msgid "Página Não Encontrada"
+msgstr "Page Not Found"
+
+#: blog/templates/blog/404.html:28
+msgid ""
+"Oops! Parece que a página que você está procurando não existe ou foi movida "
+"para outro local."
+msgstr "Oops! It seems the page you're looking for doesn't exist or has been moved."
+
+#: blog/templates/blog/404.html:32
+msgid "Voltar para a Página Inicial"
+msgstr "Back to Home Page"
+
+#: blog/templates/blog/about.html:4 blog/templates/blog/partials/footer.html:20
+#: blog/templates/blog/partials/header.html:29
+#: blog/templates/blog/partials/header.html:98
+msgid "Sobre"
+msgstr "About"
+
+#: blog/templates/blog/about.html:54 blog/templates/blog/about.html:62
+msgid "Sobre Nós"
+msgstr "About Us"
+
+#: blog/templates/blog/about.html:63
+#, python-format
+msgid ""
+"Conheça nossa missão, valores e a equipe por trás do "
+"%(site_settings.site_name)s."
+msgstr "Learn about our mission, values, and the team behind %(site_settings.site_name)s."
+
+#: blog/templates/blog/author_detail.html:4
+msgid "Perfil"
+msgstr "Profile"
+
+#: blog/templates/blog/author_detail.html:121
+#: blog/templates/blog/partials/team_carousel.html:177
+msgid "Foto de"
+msgstr "Photo of"
+
+#: blog/templates/blog/author_detail.html:128
+msgid "Criador de Conteúdo"
+msgstr "Content Creator"
+
+#: blog/templates/blog/author_detail.html:129
+msgid ""
+"Entusiasta de tecnologia e inovação, compartilhando conhecimento e "
+"explorando novas fronteiras."
+msgstr "Technology and innovation enthusiast, sharing knowledge and exploring new frontiers."
+
+#: blog/templates/blog/author_detail.html:135 blog/templates/blog/index.html:92
+msgid "Email"
+msgstr "Email"
+
+#: blog/templates/blog/author_detail.html:147
+msgid "Publicações"
+msgstr "Publications"
+
+#: blog/templates/blog/author_detail.html:149
+msgid "Artigos de"
+msgstr "Articles by"
+
+#: blog/templates/blog/author_detail.html:150
+msgid "Navegue pelas publicações mais recentes de"
+msgstr "Browse the latest publications by"
+
+#: blog/templates/blog/author_detail.html:169
+#: blog/templates/blog/partials/post_card_content.html:25
+#: blog/templates/blog/partials/post_card_content.html:64
+msgid "Ler mais"
+msgstr "Read more"
+
+#: blog/templates/blog/author_detail.html:183
+msgid "Anterior"
+msgstr "Previous"
+
+#: blog/templates/blog/author_detail.html:184
+msgid "Próximo"
+msgstr "Next"
+
+#: blog/templates/blog/author_detail.html:192
+#, python-format
+msgid ""
+"\n"
+"                            %(author_name)s ainda não publicou nenhum artigo.\n"
+"                        "
+msgstr ""
+"\n"
+"                            %(author_name)s hasn't published any articles yet.\n"
+"                        "
+
+#: blog/templates/blog/base.html:21
+msgid ""
+"Aqui você encontrará artigos e tutoriais sobre tecnologia, desenvolvimento e "
+"muito mais."
+msgstr "Here you will find articles and tutorials on technology, development, and much more."
+
+#: blog/templates/blog/base.html:60
+msgid "Fale conosco no WhatsApp"
+msgstr "Contact us on WhatsApp"
+
+#: blog/templates/blog/base.html:64
+msgid "Voltar ao topo"
+msgstr "Back to top"
+
+#: blog/templates/blog/category_list.html:4
+#: blog/templates/blog/partials/footer.html:19
+#: blog/templates/blog/partials/header.html:28
+#: blog/templates/blog/partials/header.html:97
+msgid "Categorias"
+msgstr "Categories"
+
+#: blog/templates/blog/category_list.html:224
+msgid "Explorar Categorias"
+msgstr "Explore Categories"
+
+#: blog/templates/blog/category_list.html:226
+msgid ""
+"Navegue por um universo de ideias, organizadas para facilitar sua descoberta "
+"e aprendizado."
+msgstr "Browse a universe of ideas, organized to facilitate your discovery and learning."
+
+#: blog/templates/blog/category_list.html:231
+#, python-format
+msgid ""
+"\n"
+"                                %(count)s categoria para explorar\n"
+"                            "
+msgid_plural ""
+"\n"
+"                                %(count)s categorias para explorar\n"
+"                            "
+msgstr[0] ""
+"\n"
+"                                %(count)s category to explore\n"
+"                            "
+msgstr[1] ""
+"\n"
+"                                %(count)s categories to explore\n"
+"                            "
+
+#: blog/templates/blog/category_list.html:265
+msgid "Explore uma seleção de artigos sobre este tema fascinante."
+msgstr "Explore a selection of articles on this fascinating topic."
+
+#: blog/templates/blog/category_list.html:272
+#, python-format
+msgid ""
+"\n"
+"                                        %(count)s artigo\n"
+"                                    "
+msgid_plural ""
+"\n"
+"                                        %(count)s artigos\n"
+"                                    "
+msgstr[0] ""
+"\n"
+"                                        %(count)s article\n"
+"                                    "
+msgstr[1] ""
+"\n"
+"                                        %(count)s articles\n"
+"                                    "
+
+#: blog/templates/blog/category_list.html:288
+msgid "Nenhuma Categoria Encontrada"
+msgstr "No Categories Found"
+
+#: blog/templates/blog/category_list.html:289
+msgid "Estamos trabalhando para adicionar novos conteúdos. Volte em breve!"
+msgstr "We are working to add new content. Check back soon!"
+
+#: blog/templates/blog/index.html:4
+msgid "Clareza em um Mundo Complexo"
+msgstr "Clarity in a Complex World"
+
+#: blog/templates/blog/index.html:24
+msgid "Leia o artigo completo"
+msgstr "Read the full article"
+
+#: blog/templates/blog/index.html:31
+#, python-format
+msgid "Bem-vindo ao %(site_settings.site_name)s"
+msgstr "Welcome to %(site_settings.site_name)s"
+
+#: blog/templates/blog/index.html:32
+msgid ""
+"Nenhum post em destaque no momento. Explore nossos artigos recentes abaixo."
+msgstr "No featured posts at the moment. Explore our recent articles below."
+
+#: blog/templates/blog/index.html:42
+msgid "Artigos Recentes"
+msgstr "Recent Articles"
+
+#: blog/templates/blog/index.html:43
+msgid "Ver todos"
+msgstr "View all"
+
+#: blog/templates/blog/index.html:54
+msgid "Nenhum artigo recente encontrado."
+msgstr "No recent articles found."
+
+#: blog/templates/blog/index.html:70
+msgid "Entre em Contato"
+msgstr "Get in Touch"
+
+#: blog/templates/blog/index.html:71
+msgid "Tem alguma dúvida ou sugestão? Adoraríamos ouvir você."
+msgstr "Have a question or suggestion? We'd love to hear from you."
+
+#: blog/templates/blog/index.html:88
+msgid "Nome"
+msgstr "Name"
+
+#: blog/templates/blog/index.html:96
+msgid "Mensagem"
+msgstr "Message"
+
+#: blog/templates/blog/index.html:100
+msgid "Enviar Mensagem"
+msgstr "Send Message"
+
+#: blog/templates/blog/partials/carousel_categories.html:126
+msgid "Explore por Categoria"
+msgstr "Explore by Category"
+
+#: blog/templates/blog/partials/carousel_categories.html:141
+#, python-format
+msgid ""
+"\n"
+"                                                %(count)s post\n"
+"                                            "
+msgid_plural ""
+"\n"
+"                                                %(count)s posts\n"
+"                                            "
+msgstr[0] ""
+"\n"
+"                                                %(count)s post\n"
+"                                            "
+msgstr[1] ""
+"\n"
+"                                                %(count)s posts\n"
+"                                            "
+
+#: blog/templates/blog/partials/carousel_categories.html:153
+msgid "Nenhuma categoria com posts para exibir."
+msgstr "No categories with posts to display."
+
+#: blog/templates/blog/partials/carousel_categories.html:161
+msgid "Categoria anterior"
+msgstr "Previous category"
+
+#: blog/templates/blog/partials/carousel_categories.html:164
+msgid "Próxima categoria"
+msgstr "Next category"
+
+#: blog/templates/blog/partials/footer.html:8
+msgid "Todos os direitos reservados."
+msgstr "All rights reserved."
+
+#: blog/templates/blog/partials/footer.html:11
+msgid "Desenvolvido por "
+msgstr "Developed by "
+
+#: blog/templates/blog/partials/footer.html:17
+msgid "Início"
+msgstr "Home"
+
+#: blog/templates/blog/partials/footer.html:18
+#: blog/templates/blog/partials/header.html:27
+#: blog/templates/blog/partials/header.html:96
+msgid "Artigos"
+msgstr "Articles"
+
+#: blog/templates/blog/partials/footer.html:29
+msgid "Selecionar idioma"
+msgstr "Select language"
+
+#: blog/templates/blog/partials/header.html:26
+#: blog/templates/blog/partials/header.html:95
+msgid "Home"
+msgstr "Home"
+
+#: blog/templates/blog/partials/header.html:50
+msgid "Selecionar Tema"
+msgstr "Select Theme"
+
+#: blog/templates/blog/partials/header.html:102
+msgid "Escolha um Tema"
+msgstr "Choose a Theme"
+
+#: blog/templates/blog/partials/newsletter_section.html:110
+msgid "Junte-se à nossa comunidade"
+msgstr "Join our community"
+
+#: blog/templates/blog/partials/newsletter_section.html:111
+msgid ""
+"Receba análises, notícias e insights diretamente no seu e-mail. Sem spam, "
+"apenas conteúdo de qualidade."
+msgstr "Receive analyses, news, and insights directly in your email. No spam, just quality content."
+
+#: blog/templates/blog/partials/newsletter_section.html:128
+msgid "Inscrever-se"
+msgstr "Subscribe"
+
+#: blog/templates/blog/partials/post_card_content.html:31
+#: blog/templates/blog/partials/post_card_content.html:71
+msgid "Por"
+msgstr "By"
+
+#: blog/templates/blog/partials/team_carousel.html:167
+msgid "Nossa Equipe"
+msgstr "Our Team"
+
+#: blog/templates/blog/partials/team_carousel.html:184
+msgid "Colaborador"
+msgstr "Contributor"
+
+#: blog/templates/blog/partials/team_carousel.html:189
+msgid "E-mail de"
+msgstr "Email of"
+
+#: blog/templates/blog/partials/team_carousel.html:193
+msgid "LinkedIn de"
+msgstr "LinkedIn of"
+
+#: blog/templates/blog/partials/team_carousel.html:197
+msgid "Instagram de"
+msgstr "Instagram of"
+
+#: blog/templates/blog/partials/team_carousel.html:201
+msgid "WhatsApp de"
+msgstr "WhatsApp of"
+
+#: blog/templates/blog/partials/team_carousel.html:205
+msgid "Perfil X/Twitter de"
+msgstr "X/Twitter profile of"
+
+#: blog/templates/blog/partials/team_carousel.html:212
+msgid "Nenhum membro da equipe para exibir."
+msgstr "No team members to display."
+
+#: blog/templates/blog/partials/team_carousel.html:220
+msgid "Membro anterior"
+msgstr "Previous member"
+
+#: blog/templates/blog/partials/team_carousel.html:223
+msgid "Próximo membro"
+msgstr "Next member"
+
+#: blog/templates/blog/post_list.html:4 blog/templates/blog/post_list.html:11
+msgid "Todos os Artigos"
+msgstr "All Articles"
+
+#: blog/templates/blog/post_list.html:14
+msgid ""
+"Navegue por nossa coleção completa de artigos. Encontre insights sobre "
+"design, tecnologia e estilo de vida."
+msgstr "Browse our complete collection of articles. Find insights on design, technology, and lifestyle."
+
+#: blog/templates/blog/post_list.html:30
+msgid "Nenhum artigo encontrado."
+msgstr "No articles found."
+
+#: core/settings.py:121
+msgid "Português (Brasil)"
+msgstr "Portuguese (Brazil)"
+
+#: core/settings.py:122
+msgid "Inglês"
+msgstr "English"
+
+#: core/settings.py:123
+msgid "Espanhol"
+msgstr "Spanish"
+
+#: core/settings.py:124
+msgid "Francês"
+msgstr "French"

@@ -1,0 +1,872 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, noarchive">
+  <title>{% block title %}Painel{% endblock %} — Painel Master</title>
+
+  <!-- ① Blog theme CSS variables (same palette as public blog) -->
+  <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+
+  <!-- ② Same Google Fonts as blog -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+  <!-- ③ Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <!-- ④ Tailwind CDN (preflight disabled — we use blog base styles) -->
+  <script>
+    window.tailwind = window.tailwind || {};
+    tailwind.config = { corePlugins: { preflight: false } };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       DASHBOARD MASTER — CSS SYSTEM
+       Uses blog CSS variables (--color-accent, --bg-card-optimized, etc.)
+       ═══════════════════════════════════════════════════════ */
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --dash-sidebar-w:      260px;
+      --dash-sidebar-icon-w: 62px;
+      --dash-header-h:       62px;
+
+      /* ── Theme-matching dark backgrounds ──────────────────────────
+         --dash-bg-1 = sidebar (darkest tone of the theme color)
+         --dash-bg-2 = cards/action panels (slightly lighter)
+         All have white-text contrast ≥ 7:1                          */
+      --dash-bg-1: #1e293b;   /* default / serene / slate */
+      --dash-bg-2: #334155;
+    }
+
+    /* Each theme gets dark shades derived from its own color family */
+    body.theme-mint      { --dash-bg-1: #163624; --dash-bg-2: #225237; }
+    body.theme-midnight  { --dash-bg-1: #142452; --dash-bg-2: #1e3678; }
+    body.theme-earth     { --dash-bg-1: #3d2121; --dash-bg-2: #542e2e; }
+    body.theme-rosewater { --dash-bg-1: #3d1b2b; --dash-bg-2: #54253b; }
+    body.theme-latte     { --dash-bg-1: #3d2813; --dash-bg-2: #54371a; }
+    body.theme-oceanic   { --dash-bg-1: #15324d; --dash-bg-2: #1e476e; }
+    body.theme-amethyst  { --dash-bg-1: #24164a; --dash-bg-2: #331f6b; }
+    body.theme-azure     { --dash-bg-1: #123354; --dash-bg-2: #1b4978; }
+    body.theme-forest    { --dash-bg-1: #11381f; --dash-bg-2: #18522d; }
+    body.theme-aqua      { --dash-bg-1: #123354; --dash-bg-2: #1b4978; }
+    /* slate: same as default (neutral gray-based) */
+
+    html, body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-primary, #f8f9fa);
+      color: var(--text-primary, #2d3748);
+    }
+
+    /* ── TOPBAR (same aesthetic as blog site-header) ────────────── */
+    .dash-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      height: var(--dash-header-h);
+      background: var(--bg-card-optimized, rgba(255,255,255,.97));
+      border-bottom: 1px solid var(--border-color, rgba(203,213,225,.7));
+      box-shadow: 0 2px 20px var(--shadow-color, rgba(165,180,252,.1));
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+    }
+
+    /* Sidebar toggle button */
+    .sidebar-toggle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px; height: 36px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text-secondary, #718096);
+      transition: background .15s, color .15s;
+      flex-shrink: 0;
+    }
+    .sidebar-toggle-btn:hover {
+      background: var(--bg-section-2, #f1f3f5);
+      color: var(--text-heading, #1a202c);
+    }
+
+    /* Brand: logo + site name + badge */
+    .dash-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .dash-brand img {
+      max-height: 34px;
+      width: auto;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+    .dash-brand-name {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-heading, #1a202c);
+      white-space: nowrap;
+    }
+    .dash-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: rgba(0,0,0,.25);        /* Always dark — no contrast issue */
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.2);
+      line-height: 1.6;
+      flex-shrink: 0;
+    }
+
+    /* Divider */
+    .topbar-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-color, rgba(203,213,225,.7));
+      flex-shrink: 0;
+    }
+
+    /* Breadcrumb */
+    .dash-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary, #718096);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .dash-breadcrumb a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color .15s;
+      white-space: nowrap;
+    }
+    .dash-breadcrumb a:hover { color: var(--color-accent); }
+    .dash-breadcrumb .crumb-sep { color: var(--border-color); font-size: 11px; }
+    .dash-page-title {
+      font-weight: 700;
+      color: var(--text-heading, #1a202c);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Right topbar items */
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+    .topbar-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+    }
+    .topbar-btn:hover {
+      background: var(--bg-section-2);
+      color: var(--text-heading);
+    }
+    .topbar-btn.danger:hover { color: #dc2626; background: #fef2f2; }
+
+    /* Theme switcher in topbar */
+    .theme-switcher { position: relative; }
+    .theme-switch-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px 5px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 99px;
+      background: var(--bg-section-2, #f1f3f5);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text-primary);
+      transition: border-color .15s;
+    }
+    .theme-switch-btn:hover { border-color: var(--color-accent); }
+    .theme-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+    .theme-caret { font-size: 9px; color: var(--text-secondary); }
+    .theme-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--bg-card-optimized);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 8px 30px var(--shadow-color, rgba(0,0,0,.12));
+      padding: 6px;
+      z-index: 300;
+      min-width: 160px;
+    }
+    .theme-switcher.ts-open .theme-dropdown { display: block; animation: dropIn .15s ease; }
+    .theme-opt {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .theme-opt:hover { background: var(--bg-section-2); }
+    .theme-opt.ts-active { color: var(--color-accent); font-weight: 600; }
+    .theme-opt-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+
+    /* User avatar */
+    .user-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: rgba(15,23,42,.08);     /* Dark transparent — good on any header */
+      border: 2px solid var(--color-accent, #a5b4fc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--color-accent, #a5b4fc); /* Initials in accent color */
+      flex-shrink: 0;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────────────────── */
+    .dash-layout {
+      display: flex;
+      min-height: calc(100vh - var(--dash-header-h));
+    }
+
+    /* ── SIDEBAR ────────────────────────────────────────────────── */
+    .dash-sidebar {
+      width: var(--dash-sidebar-w);
+      flex-shrink: 0;
+      background: var(--dash-bg-1);
+      position: sticky;
+      top: var(--dash-header-h);
+      height: calc(100vh - var(--dash-header-h));
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: width .25s cubic-bezier(.4,0,.2,1);
+      scrollbar-width: none;
+    }
+    .dash-sidebar::-webkit-scrollbar { display: none; }
+
+    /* Accent strip at the very top of sidebar (shows current theme color) */
+    .sidebar-accent-strip {
+      height: 3px;
+      background: var(--color-accent, #a5b4fc);
+      flex-shrink: 0;
+      transition: background .3s;
+    }
+
+    /* COLLAPSED state (desktop) */
+    body.sidebar-collapsed .dash-sidebar { width: var(--dash-sidebar-icon-w); }
+
+    /* Sidebar nav */
+    .dash-nav { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 1px; }
+
+    .dash-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #94a3b8;
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: background .15s, color .15s;
+      position: relative;
+      border-left: 3px solid transparent;
+    }
+    .dash-nav-link:hover { background: rgba(255,255,255,.07); color: #e2e8f0; border-left-color: rgba(255,255,255,.15); }
+
+    /* Active state: solid background (matches button) + white text */
+    .dash-nav-link.active {
+      background: var(--color-accent, #4f46e5);
+      color: #ffffff;
+      border-left-color: transparent;
+      font-weight: 600;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--color-accent) 40%, transparent);
+    }
+    .dash-nav-link.active i {
+      color: #ffffff;
+    }
+
+    .dash-nav-link i { flex-shrink: 0; width: 16px; text-align: center; font-size: 12px; transition: color .15s; }
+
+    .dash-nav-label { transition: opacity .18s, width .18s; white-space: nowrap; }
+    body.sidebar-collapsed .dash-nav-label { opacity: 0; width: 0; overflow: hidden; }
+
+    /* Section labels — neutral readable color */
+    .dash-nav-section {
+      padding: 10px 12px 4px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: rgba(255, 255, 255, 0.45);
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: opacity .18s;
+    }
+    body.sidebar-collapsed .dash-nav-section { opacity: 0; }
+
+    /* Divider before blog links */
+    .sidebar-divider {
+      height: 1px;
+      background: rgba(255,255,255,.06);
+      margin: 8px 12px;
+      flex-shrink: 0;
+    }
+
+    /* Blog access links - special accent styling */
+    .dash-nav-link.blog-link {
+      color: var(--color-accent, #a5b4fc);
+      opacity: .8;
+    }
+    .dash-nav-link.blog-link:hover { opacity: 1; background: rgba(255,255,255,.06); border-left-color: var(--color-accent); }
+    .dash-nav-link.blog-link i { color: var(--color-accent, #a5b4fc); }
+
+    /* Tooltip in collapsed mode */
+    body.sidebar-collapsed .dash-nav-link {
+      padding-left: 11px;
+      border-left-color: transparent !important;
+    }
+    body.sidebar-collapsed .dash-nav-link.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--color-accent, #a5b4fc);
+    }
+    body.sidebar-collapsed .dash-nav-link::after {
+      content: attr(data-label);
+      position: absolute;
+      left: calc(var(--dash-sidebar-icon-w) + 8px);
+      background: var(--dash-bg-2);
+      color: #e2e8f0;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.1);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .12s;
+      z-index: 400;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    }
+    body.sidebar-collapsed .dash-nav-link:hover::after { opacity: 1; }
+
+    /* Sidebar footer */
+    .sidebar-footer {
+      padding: 12px 10px;
+      border-top: 1px solid rgba(255,255,255,.06);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar-user-info { min-width: 0; transition: opacity .18s, width .18s; }
+    body.sidebar-collapsed .sidebar-user-info { opacity: 0; width: 0; overflow: hidden; }
+
+    /* ── MAIN CONTENT ───────────────────────────────────────────── */
+    .dash-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── FLASH MESSAGES ─────────────────────────────────────────── */
+    .dash-alerts { padding: 16px 24px 0; display: flex; flex-direction: column; gap: 8px; }
+    .dash-alert {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      border: 1px solid;
+    }
+    .alert-success { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .alert-error   { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    .alert-warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .alert-info    { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+
+    /* ── MOBILE ─────────────────────────────────────────────────── */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      top: var(--dash-header-h);
+      background: rgba(0,0,0,.5);
+      z-index: 149;
+      backdrop-filter: blur(2px);
+    }
+    @media (max-width: 1023px) {
+      .dash-sidebar {
+        position: fixed;
+        top: var(--dash-header-h);
+        left: 0;
+        z-index: 150;
+        width: var(--dash-sidebar-w) !important;
+        transform: translateX(-105%);
+        transition: transform .25s cubic-bezier(.4,0,.2,1);
+        box-shadow: 8px 0 30px rgba(0,0,0,.3);
+      }
+      body.sidebar-open .dash-sidebar { transform: translateX(0); }
+      body.sidebar-open .sidebar-overlay { display: block; }
+      body.sidebar-collapsed .dash-nav-label { opacity: 1 !important; width: auto !important; }
+      body.sidebar-collapsed .dash-nav-section { opacity: 1 !important; }
+    }
+
+    /* Tablet: ocultar breadcrumb textual, manter título */
+    @media (max-width: 768px) {
+      .dash-topbar { padding: 0 12px; gap: 8px; }
+      .dash-breadcrumb a:not(:last-of-type),
+      .dash-breadcrumb .crumb-sep { display: none; }
+      .topbar-divider { display: none; }
+      .dash-brand-name { font-size: 1rem; }
+    }
+
+    /* Mobile pequeno: ocultar badge, compactar tema switcher */
+    @media (max-width: 480px) {
+      .dash-badge { display: none; }
+      .dash-sidebar { width: 82vw !important; }
+      #theme-name { display: none; }
+      .theme-switch-btn { padding: 5px 8px; }
+      .dash-main > div[style*="padding"] { padding: 12px !important; }
+    }
+
+    /* Reduzir padding do conteúdo em mobile */
+    @media (max-width: 640px) {
+      .dash-main > div { padding: 12px; }
+      .dash-alerts { padding: 12px 12px 0; }
+    }
+
+    /* ── CARDS & UTILITIES ──────────────────────────────────────── */
+    .dash-card {
+      background: var(--bg-card-optimized, #fff);
+      border: 1px solid var(--border-color, rgba(203,213,225,.7));
+      border-radius: 16px;
+      box-shadow: 0 1px 8px var(--shadow-color, rgba(165,180,252,.06));
+    }
+
+    .field-label { font-size: 13px; font-weight: 600; color: var(--text-heading); margin-bottom: 6px; display: block; }
+    .field-input {
+      width: 100%;
+      border: 1px solid var(--border-color, #cbd5e1);
+      border-radius: 10px;
+      padding: 9px 13px;
+      font-size: 14px;
+      background: var(--bg-section-1, #fff);
+      color: var(--text-primary);
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .field-input:focus {
+      border-color: var(--color-accent, #a5b4fc);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 20%, transparent);
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 20px;
+      border-radius: 10px;
+      background: var(--color-accent, #4f46e5);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      transition: filter .15s, transform .1s;
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-primary:active { transform: scale(.98); }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    .btn-secondary:hover { background: var(--bg-section-2); color: var(--text-heading); }
+
+    /* Badges */
+    .badge-pub  { display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#dcfce7;color:#166534; }
+    .badge-drft { display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;background:#fef9c3;color:#854d0e; }
+
+    @keyframes dropIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+<!-- Apply theme & sidebar state from localStorage before first paint -->
+<script>
+(function() {
+  var t = localStorage.getItem('color-theme') || 'serene';
+  if (t !== 'serene') document.body.classList.add('theme-' + t);
+  if (localStorage.getItem('dash-sidebar') === 'collapsed') {
+    document.body.classList.add('sidebar-collapsed');
+  }
+})();
+</script>
+
+<!-- Mobile overlay -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- ╔══════════════════════════════════════════════════════════╗ -->
+<!-- ║  TOPBAR  (blog header style)                            ║ -->
+<!-- ╚══════════════════════════════════════════════════════════╝ -->
+<header class="dash-topbar">
+
+  <!-- Sidebar toggle -->
+  <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Recolher/expandir menu">
+    <i class="fas fa-bars" style="font-size:16px;"></i>
+  </button>
+
+  <!-- Brand -->
+  <a href="{% url 'dashboard:index' %}" class="dash-brand">
+    {% if site_settings and site_settings.logo %}
+      <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.site_name }}">
+    {% endif %}
+    <span class="dash-brand-name">{{ site_settings.site_name|default:"Blog" }}</span>
+    <span class="dash-badge">Painel</span>
+  </a>
+
+  <div class="topbar-divider"></div>
+
+  <!-- Breadcrumb + page title -->
+  <div class="dash-breadcrumb">
+    <a href="{% url 'dashboard:index' %}">Painel</a>
+    {% block breadcrumb %}{% endblock %}
+    <span class="dash-page-title">{% block page_heading %}{% endblock %}</span>
+  </div>
+
+  <!-- Right side -->
+  <div class="topbar-right">
+    {% block topbar_actions %}{% endblock %}
+
+    <!-- View site -->
+    <a href="/" target="_blank" class="topbar-btn" title="Ver site público">
+      <i class="fas fa-globe" style="font-size:12px;"></i>
+      <span style="display:none;" class="sm-show">Site</span>
+    </a>
+
+    <!-- Theme switcher -->
+    <div class="theme-switcher" id="theme-switcher">
+      <button class="theme-switch-btn" onclick="toggleThemeSwitcher(event)">
+        <div class="theme-dot" id="theme-dot"></div>
+        <span id="theme-name" style="font-size:12px;">Tema</span>
+        <i class="fas fa-chevron-down theme-caret"></i>
+      </button>
+      <div class="theme-dropdown" id="theme-dropdown"></div>
+    </div>
+
+    <!-- User avatar -->
+    <div class="user-avatar" title="{{ request.user.get_full_name|default:request.user.username }}">
+      {{ request.user.username|slice:":2"|upper }}
+    </div>
+
+    <!-- Logout -->
+    <form method="post" action="{% url 'dashboard:logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="topbar-btn danger" title="Sair do painel">
+        <i class="fas fa-right-from-bracket" style="font-size:13px;"></i>
+      </button>
+    </form>
+  </div>
+</header>
+
+<!-- ╔══════════════════════════════════════════════════════════╗ -->
+<!-- ║  LAYOUT                                                 ║ -->
+<!-- ╚══════════════════════════════════════════════════════════╝ -->
+<div class="dash-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="dash-sidebar" id="dash-sidebar">
+    <!-- Accent strip: shows the current theme color at a glance -->
+    <div class="sidebar-accent-strip"></div>
+
+    <nav class="dash-nav">
+
+      <a href="{% url 'dashboard:index' %}"
+         class="dash-nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
+         data-label="Dashboard">
+        <i class="fas fa-gauge-high"></i>
+        <span class="dash-nav-label">Dashboard</span>
+      </a>
+
+      <div class="dash-nav-section">Conteúdo</div>
+
+      <a href="{% url 'dashboard:posts_list' %}"
+         class="dash-nav-link {% if 'post' in request.resolver_match.url_name %}active{% endif %}"
+         data-label="Posts">
+        <i class="fas fa-file-alt"></i>
+        <span class="dash-nav-label">Posts</span>
+      </a>
+
+      <a href="{% url 'dashboard:authors_list' %}"
+         class="dash-nav-link {% if 'author' in request.resolver_match.url_name %}active{% endif %}"
+         data-label="Autores">
+        <i class="fas fa-user-astronaut"></i>
+        <span class="dash-nav-label">Autores</span>
+      </a>
+
+      <a href="{% url 'dashboard:categories_list' %}"
+         class="dash-nav-link {% if 'categor' in request.resolver_match.url_name %}active{% endif %}"
+         data-label="Categorias">
+        <i class="fas fa-layer-group"></i>
+        <span class="dash-nav-label">Categorias</span>
+      </a>
+
+      <div class="dash-nav-section">Configurações</div>
+
+      <a href="{% url 'dashboard:site_settings' %}"
+         class="dash-nav-link {% if request.resolver_match.url_name == 'site_settings' %}active{% endif %}"
+         data-label="Configurações">
+        <i class="fas fa-sliders-h"></i>
+        <span class="dash-nav-label">Configurações</span>
+      </a>
+
+      <a href="{% url 'dashboard:about' %}"
+         class="dash-nav-link {% if request.resolver_match.url_name == 'about' %}active{% endif %}"
+         data-label="Página Sobre">
+        <i class="fas fa-address-card"></i>
+        <span class="dash-nav-label">Página Sobre</span>
+      </a>
+
+      <div class="dash-nav-section">Audiência</div>
+
+      <a href="{% url 'dashboard:contacts' %}"
+         class="dash-nav-link {% if request.resolver_match.url_name == 'contacts' %}active{% endif %}"
+         data-label="Contatos">
+        <i class="fas fa-inbox"></i>
+        <span class="dash-nav-label">Contatos</span>
+      </a>
+
+      <a href="{% url 'dashboard:newsletter' %}"
+         class="dash-nav-link {% if request.resolver_match.url_name == 'newsletter' %}active{% endif %}"
+         data-label="Newsletter">
+        <i class="fas fa-paper-plane"></i>
+        <span class="dash-nav-label">Newsletter</span>
+      </a>
+
+      <div class="dash-nav-section">Inteligência Artificial</div>
+
+      <a href="{% url 'dashboard:ai_writer' %}"
+         class="dash-nav-link {% if request.resolver_match.url_name == 'ai_writer' %}active{% endif %}"
+         data-label="IA Escritor">
+        <i class="fas fa-robot"></i>
+        <span class="dash-nav-label">IA Escritor</span>
+      </a>
+
+      <a href="{% url 'dashboard:ai_settings' %}"
+         class="dash-nav-link {% if request.resolver_match.url_name == 'ai_settings' %}active{% endif %}"
+         data-label="Config IA">
+        <i class="fas fa-brain"></i>
+        <span class="dash-nav-label">Config IA</span>
+      </a>
+
+      <!-- Blog access links -->
+      <div class="sidebar-divider"></div>
+
+      <a href="/" target="_blank" class="dash-nav-link blog-link" data-label="Ver Blog">
+        <i class="fas fa-globe"></i>
+        <span class="dash-nav-label">Ver Blog</span>
+      </a>
+
+      <a href="/admin/" target="_blank" class="dash-nav-link blog-link" data-label="Admin Django">
+        <i class="fas fa-lock"></i>
+        <span class="dash-nav-label">Admin Django</span>
+      </a>
+
+    </nav>
+
+    <!-- Sidebar user footer -->
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar" style="flex-shrink:0;">
+          {{ request.user.username|slice:":2"|upper }}
+        </div>
+        <div class="sidebar-user-info">
+          <p style="font-size:13px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {{ request.user.get_full_name|default:request.user.username }}
+          </p>
+          <p style="font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {{ request.user.email }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="dash-main">
+
+    {% if messages %}
+    <div class="dash-alerts">
+      {% for msg in messages %}
+        <div class="dash-alert {% if 'success' in msg.tags %}alert-success{% elif 'error' in msg.tags %}alert-error{% elif 'warning' in msg.tags %}alert-warning{% else %}alert-info{% endif %}">
+          <i class="fas {% if 'success' in msg.tags %}fa-check-circle{% elif 'error' in msg.tags %}fa-circle-exclamation{% elif 'warning' in msg.tags %}fa-triangle-exclamation{% else %}fa-info-circle{% endif %}"></i>
+          {{ msg }}
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div style="padding: 24px;">
+      {% block content %}{% endblock %}
+    </div>
+
+  </main>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!--  Dashboard JS                                                  -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<script>
+/* ── Theme system (mirrors blog's theme logic) ─────────────────── */
+const THEMES = {
+  serene:    { color: '#a5b4fc', name: 'Serene' },
+  midnight:  { color: '#93c5fd', name: 'Midnight' },
+  earth:     { color: '#fca5a5', name: 'Earth' },
+  mint:      { color: '#86efac', name: 'Mint' },
+  rosewater: { color: '#fda4af', name: 'Rosewater' },
+  slate:     { color: '#94a3b8', name: 'Slate' },
+  latte:     { color: '#d2b48c', name: 'Latte' },
+  oceanic:   { color: '#5db4d9', name: 'Oceanic' },
+  amethyst:  { color: '#673de6', name: 'Amethyst' },
+  azure:     { color: '#00b3ff', name: 'Azure' },
+  forest:    { color: '#006241', name: 'Forest' },
+  aqua:      { color: '#22d3ee', name: 'Aqua' },
+};
+
+function applyTheme(key) {
+  document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
+  if (key !== 'serene') document.body.classList.add('theme-' + key);
+  localStorage.setItem('color-theme', key);
+  updateThemeUI(key);
+}
+
+function updateThemeUI(key) {
+  const t = THEMES[key] || THEMES.serene;
+  const dot = document.getElementById('theme-dot');
+  const nameEl = document.getElementById('theme-name');
+  if (dot) dot.style.background = t.color;
+  if (nameEl) nameEl.textContent = t.name;
+  document.querySelectorAll('.theme-opt').forEach(el =>
+    el.classList.toggle('ts-active', el.dataset.theme === key)
+  );
+}
+
+function buildThemeDropdown() {
+  const dd = document.getElementById('theme-dropdown');
+  if (!dd) return;
+  const cur = localStorage.getItem('color-theme') || 'serene';
+  dd.innerHTML = Object.entries(THEMES).map(([key, t]) =>
+    `<div class="theme-opt ${key === cur ? 'ts-active' : ''}" data-theme="${key}"
+          onclick="applyTheme('${key}');toggleThemeSwitcher()">
+       <div class="theme-opt-dot" style="background:${t.color}"></div>${t.name}
+    </div>`
+  ).join('');
+}
+
+function toggleThemeSwitcher(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('theme-switcher').classList.toggle('ts-open');
+}
+
+document.addEventListener('click', e => {
+  const sw = document.getElementById('theme-switcher');
+  if (sw && !sw.contains(e.target)) sw.classList.remove('ts-open');
+});
+
+/* ── Sidebar toggle ────────────────────────────────────────────── */
+function toggleSidebar() {
+  if (window.innerWidth < 1024) {
+    document.body.classList.toggle('sidebar-open');
+    document.body.classList.remove('sidebar-collapsed');
+  } else {
+    const nowCollapsed = document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('dash-sidebar', nowCollapsed ? 'collapsed' : 'open');
+  }
+}
+function closeSidebar() { document.body.classList.remove('sidebar-open'); }
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth >= 1024) document.body.classList.remove('sidebar-open');
+});
+
+/* ── Init ──────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  const cur = localStorage.getItem('color-theme') || 'serene';
+  updateThemeUI(cur);
+  buildThemeDropdown();
+});
+</script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

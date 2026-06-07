@@ -1,0 +1,403 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_heading %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Index page: all colors from theme CSS variables ─────────── */
+
+  /* Stats cards */
+  .stat-card {
+    background: var(--bg-card-optimized);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 1px 4px var(--shadow-color);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px var(--shadow-color); }
+
+  .stat-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--bg-section-2);
+    border: 2px solid var(--color-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .stat-icon i { color: var(--color-accent); font-size: .85rem; }
+
+  .stat-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .stat-number {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-heading);
+    line-height: 1;
+    margin: 0;
+  }
+  .stat-sub { font-size: 11px; color: var(--text-secondary); }
+
+  /* ── Quick action cards — always dark background for contrast ── */
+  /* Uses accent only for top border + icon — works on ALL themes   */
+  .action-card {
+    display: block;
+    text-decoration: none;
+    border-radius: 14px;
+    padding: 16px;
+    color: #fff;
+    background: var(--dash-bg-2);  /* theme-matching dark bg */
+    border-top: 4px solid var(--color-accent);
+    transition: filter .2s, transform .2s, box-shadow .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .action-card::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -10%;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    opacity: .1;
+    pointer-events: none;
+  }
+  .action-card:hover { filter: brightness(1.25); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.35); }
+  .action-card-title {
+    font-size: 1rem; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px;
+    color: #fff;
+  }
+  .action-card-title i { color: var(--color-accent); }
+  .action-card-sub { font-size: 12px; color: #94a3b8; }
+
+  /* Dark variant (Configurações) — deepest bg, subtle accent decoration */
+  .action-card-dark {
+    display: block;
+    text-decoration: none;
+    border-radius: 14px;
+    padding: 16px;
+    color: #fff;
+    background: var(--dash-bg-1);  /* darkest theme-matching bg */
+    border-top: 4px solid rgba(255,255,255,.12);
+    transition: filter .2s, transform .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .action-card-dark::before {
+    content: '';
+    position: absolute;
+    top: -30%; right: -10%;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    opacity: .08;
+    pointer-events: none;
+  }
+  .action-card-dark:hover { filter: brightness(1.3); transform: translateY(-2px); }
+  .action-card-dark .action-card-title i { color: var(--color-accent); }
+  .action-card-dark .action-card-sub { color: rgba(255,255,255,.45); }
+
+  /* Tables / list sections */
+  .dash-section {
+    background: var(--bg-card-optimized);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 1px 8px var(--shadow-color);
+  }
+  .dash-section-header {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dash-section-title { font-weight: 700; font-size: 14px; color: var(--text-heading); }
+  .dash-see-all {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity .15s;
+  }
+  .dash-see-all:hover { opacity: .75; }
+
+  /* Post row in list */
+  .post-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background .12s;
+  }
+  .post-row:nth-child(even) { background-color: var(--bg-section-2); }
+  .post-row:last-child { border-bottom: none; }
+  .post-row:hover { background-color: color-mix(in srgb, var(--bg-section-2) 80%, transparent); }
+  .post-row-thumb {
+    width: 48px; height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid var(--border-color);
+  }
+  .post-row-placeholder {
+    width: 48px; height: 48px;
+    border-radius: 8px;
+    background: var(--bg-section-2);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .post-title { font-size: 14px; font-weight: 600; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+  .post-meta  { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+
+  .badge-pub  { display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;background:#dcfce7;color:#166534;flex-shrink:0; }
+  .badge-drft { display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;background:#fef9c3;color:#854d0e;flex-shrink:0; }
+
+  .edit-btn { color: var(--text-secondary); text-decoration: none; padding: 4px; border-radius: 6px; transition: color .15s, background .15s; flex-shrink:0; }
+  .edit-btn:hover { color: var(--color-accent); background: var(--bg-section-2); }
+
+  /* Contact row */
+  .contact-row {
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background .12s;
+  }
+  .contact-row:nth-child(even) { background-color: rgba(128, 128, 128, 0.04); }
+  .contact-row:hover { background-color: rgba(128, 128, 128, 0.08); }
+  
+  .contact-avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    opacity: .2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .contact-avatar span { position: absolute; opacity: 5; color: var(--text-heading); font-size: 11px; font-weight: 700; }
+
+  /* Empty state */
+  .empty-state { padding: 48px 22px; text-align: center; }
+  .empty-icon { font-size: 2.5rem; color: var(--border-color); margin-bottom: 12px; }
+  .empty-text { font-size: 13px; color: var(--text-secondary); }
+  .empty-link { margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--color-accent); text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ① STATS GRID ──────────────────────────────────────────────── -->
+<style>
+/* Mobile-first responsive grid */
+.stats-outer {
+  display: grid;
+  grid-template-columns: 1fr;         /* 1 col < 480px */
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media(min-width:480px)  { .stats-outer { grid-template-columns: repeat(2,1fr); gap: 14px; } }
+@media(min-width:1280px) { .stats-outer { grid-template-columns: repeat(4,1fr); margin-bottom: 20px; } }
+
+/* Stat card compact on very small screens */
+@media(max-width:479px) {
+  .stat-card { padding: 14px; border-radius: 14px; }
+  .stat-number { font-size: 1.6rem; }
+}
+</style>
+
+<div class="stats-outer">
+  <div class="stat-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+        <span class="stat-label">Posts</span>
+      </div>
+      <p class="stat-number">{{ total_posts }}</p>
+    </div>
+    <div style="display:flex;gap:12px;" class="stat-sub">
+      <span style="color:#16a34a;">{{ published_posts }} publicados</span>
+      <span style="color:#d97706;">{{ draft_posts }} rascunhos</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon"><i class="fas fa-user-astronaut"></i></div>
+        <span class="stat-label">Autores</span>
+      </div>
+      <p class="stat-number">{{ total_authors }}</p>
+    </div>
+    <p class="stat-sub">membros da equipe</p>
+  </div>
+
+  <div class="stat-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon"><i class="fas fa-paper-plane"></i></div>
+        <span class="stat-label">Newsletter</span>
+      </div>
+      <p class="stat-number">{{ total_subscribers }}</p>
+    </div>
+    <p class="stat-sub">assinantes</p>
+  </div>
+
+  <div class="stat-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon"><i class="fas fa-inbox"></i></div>
+        <span class="stat-label">Contatos</span>
+      </div>
+      <p class="stat-number">{{ total_contacts }}</p>
+    </div>
+    <p class="stat-sub">mensagens recebidas</p>
+  </div>
+</div>
+
+<!-- ② QUICK ACTIONS ──────────────────────────────────────────── -->
+<style>
+.actions-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+@media(min-width:768px)  { .actions-grid { grid-template-columns: repeat(2,1fr); gap: 14px; } }
+@media(min-width:1024px) { .actions-grid { grid-template-columns: repeat(3,1fr); margin-bottom: 20px; } }
+@media(max-width:479px) {
+  .action-card, .action-card-dark { padding: 16px 14px; border-radius: 14px; }
+  .action-card-title { font-size: 1rem; }
+}
+</style>
+
+<div class="actions-grid">
+  <a href="{% url 'dashboard:post_create' %}" class="action-card">
+    <div class="action-card-title">
+      <i class="fas fa-plus-circle" style="font-size:1.3rem;"></i>
+      Novo Post
+    </div>
+    <p class="action-card-sub">Criar um novo artigo no blog</p>
+  </a>
+
+  <a href="{% url 'dashboard:ai_writer' %}" class="action-card">
+    <div class="action-card-title">
+      <i class="fas fa-robot" style="font-size:1.3rem;"></i>
+      IA Escritor
+    </div>
+    <p class="action-card-sub">Gerar artigos com inteligência artificial</p>
+  </a>
+
+  <a href="{% url 'dashboard:site_settings' %}" class="action-card-dark">
+    <div class="action-card-title">
+      <i class="fas fa-sliders-h" style="font-size:1.4rem;opacity:.9;color:var(--color-accent);"></i>
+      Configurações
+    </div>
+    <p class="action-card-sub">Configurar logo, redes sociais e IA</p>
+  </a>
+</div>
+
+<!-- ③ RECENT TABLES ──────────────────────────────────────────── -->
+<style>
+.tables-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media(min-width:1280px){ .tables-grid { grid-template-columns: 2fr 1fr; gap: 14px; } }
+@media(max-width:479px) {
+  .post-row { padding: 10px 14px; gap: 8px; }
+  .post-row-thumb, .post-row-placeholder { width: 32px; height: 32px; }
+  .dash-section-header { padding: 10px 14px; }
+  .post-title { font-size: 12px; }
+}
+</style>
+
+<div class="tables-grid">
+
+  <!-- Recent posts -->
+  <div class="dash-section">
+    <div class="dash-section-header">
+      <span class="dash-section-title">Posts Recentes</span>
+      <a href="{% url 'dashboard:posts_list' %}" class="dash-see-all">
+        Ver todos <i class="fas fa-arrow-right" style="font-size:10px;"></i>
+      </a>
+    </div>
+    {% if recent_posts %}
+      {% for post in recent_posts %}
+      <div class="post-row">
+        {% if post.thumbnail %}
+          <img src="{{ post.thumbnail.url }}" alt="" class="post-row-thumb">
+        {% else %}
+          <div class="post-row-placeholder">
+            <i class="fas fa-image" style="font-size:12px;color:var(--border-color);"></i>
+          </div>
+        {% endif %}
+        <div style="flex:1;min-width:0;">
+          <p class="post-title">{{ post|default:'(sem título)' }}</p>
+          <p class="post-meta">{{ post.created_at|date:"d/m/Y" }} · {{ post.author|default:'Sem autor' }}</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          {% if post.status == 'published' %}
+            <span class="badge-pub"><i class="fas fa-circle" style="font-size:6px;"></i>Publicado</span>
+          {% else %}
+            <span class="badge-drft"><i class="fas fa-circle" style="font-size:6px;"></i>Rascunho</span>
+          {% endif %}
+          <a href="{% url 'dashboard:post_edit' post.pk %}" class="edit-btn">
+            <i class="fas fa-pen" style="font-size:11px;"></i>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon"><i class="fas fa-file-alt"></i></div>
+      <p class="empty-text">Nenhum post ainda.</p>
+      <a href="{% url 'dashboard:post_create' %}" class="empty-link">
+        <i class="fas fa-plus"></i> Criar primeiro post
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent contacts -->
+  <div class="dash-section">
+    <div class="dash-section-header">
+      <span class="dash-section-title">Contatos Recentes</span>
+      <a href="{% url 'dashboard:contacts' %}" class="dash-see-all">
+        Ver todos <i class="fas fa-arrow-right" style="font-size:10px;"></i>
+      </a>
+    </div>
+    {% if recent_contacts %}
+      {% for contact in recent_contacts %}
+      <div class="contact-row">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--color-accent);opacity:.25;position:relative;flex-shrink:0;"></div>
+          <div style="width:24px;height:24px;border-radius:50%;position:absolute;display:flex;align-items:center;justify-content:center;">
+          </div>
+          <span style="width:24px;height:24px;border-radius:50%;background:var(--bg-section-2);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--color-accent);flex-shrink:0;">
+            {{ contact.name|slice:":1"|upper }}
+          </span>
+          <p style="font-size:13px;font-weight:600;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ contact.name }}</p>
+        </div>
+        <p style="font-size:11px;color:var(--text-secondary);margin-left:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ contact.email }}</p>
+        <p style="font-size:11px;color:var(--text-primary);margin-left:32px;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ contact.message|truncatechars:80 }}</p>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+      <p class="empty-text">Nenhuma mensagem ainda.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

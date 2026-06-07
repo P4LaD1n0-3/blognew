@@ -1,0 +1,326 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Posts{% endblock %}
+{% block breadcrumb %}<span class="mx-2 text-slate-300">/</span> Posts{% endblock %}
+{% block page_heading %}Posts{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+  /* Posts list responsive */
+  .posts-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .posts-table-wrap table { min-width: 600px; }
+
+  @media(max-width: 640px) {
+    .posts-table-wrap table { min-width: 500px; }
+    .col-date { display: none; }
+    /* Compact toolbar on mobile */
+    .posts-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+    .posts-toolbar form { width: 100%; }
+    .posts-toolbar form input { width: 100%; }
+    .posts-filter-pills { justify-content: flex-start; }
+  }
+
+  /* Use theme color for primary button */
+  .btn-create-post {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-accent);
+    color: #fff !important;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: filter .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .btn-create-post:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+  /* Make card use theme colors */
+  .posts-card {
+    background: var(--bg-card-optimized);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 8px var(--shadow-color);
+  }
+  .posts-toolbar {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-card-optimized);
+  }
+  .filter-pill {
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .15s, color .15s;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    background: var(--bg-section-2);
+  }
+  .filter-pill.active {
+    background: var(--color-accent);
+    color: #fff;
+    border-color: transparent;
+  }
+  /* Ensure text contrast for very light accents */
+  .filter-pill.active-published { background: #16a34a; color: #fff; border-color: transparent; }
+  .filter-pill.active-draft     { background: #d97706; color: #fff; border-color: transparent; }
+</style>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'dashboard:post_create' %}" class="btn-create-post">
+  <i class="fas fa-plus" style="font-size:11px;"></i> Novo Post
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="posts-card">
+  <!-- Toolbar -->
+  <div class="posts-toolbar">
+    <form method="get" class="flex gap-2" style="flex:1;min-width:180px;">
+      {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+      <div style="position:relative;flex:1;">
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:12px;"><i class="fas fa-search"></i></span>
+        <input type="text" name="q" value="{{ search_q }}"
+               style="width:100%;padding:7px 12px 7px 30px;border:1px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-section-2);color:var(--text-primary);outline:none;font-family:inherit;"
+               placeholder="Buscar posts...">
+      </div>
+    </form>
+
+    <!-- Status filters (theme-aware) -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;" class="posts-filter-pills">
+      <a href="?{% if search_q %}q={{ search_q }}{% endif %}"
+         class="filter-pill {% if not status_filter %}active{% endif %}">
+        Todos
+      </a>
+      <a href="?{% if search_q %}q={{ search_q }}&{% endif %}status=published"
+         class="filter-pill {% if status_filter == 'published' %}active-published{% endif %}">
+        Publicados
+      </a>
+      <a href="?{% if search_q %}q={{ search_q }}&{% endif %}status=draft"
+         class="filter-pill {% if status_filter == 'draft' %}active-draft{% endif %}">
+        Rascunhos
+      </a>
+    </div>
+
+    <span style="margin-left:auto;font-size:11px;color:var(--text-secondary);white-space:nowrap;">
+      <i class="fas fa-grip-vertical" style="margin-right:4px;"></i> Arraste para reordenar
+    </span>
+  </div>
+
+  <!-- Bulk action bar -->
+  <form method="post" id="bulk-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" id="bulk-action-input">
+
+    <div id="bulk-toolbar" class="hidden" style="padding:10px 18px;background:var(--bg-section-2);border-bottom:1px solid var(--border-color);display:none;align-items:center;gap:10px;">
+      <span id="selected-count" style="font-size:13px;font-weight:600;color:var(--text-heading);"></span>
+      <button type="button" onclick="bulkAction('publish')"
+              class="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors">
+        <i class="fas fa-eye mr-1"></i> Publicar
+      </button>
+      <button type="button" onclick="bulkAction('draft')"
+              class="text-sm bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors">
+        <i class="fas fa-eye-slash mr-1"></i> Rascunho
+      </button>
+    </div>
+
+    {% if page_obj.object_list %}
+    <div class="posts-table-wrap">
+      <table style="width:100%">
+        <thead>
+          <tr class="bg-slate-50 text-left text-xs text-slate-500 uppercase tracking-wider">
+            <th class="px-5 py-3 w-10">
+              <input type="checkbox" id="select-all" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+            </th>
+            <th class="px-3 py-3 w-8"></th>
+            <th class="px-3 py-3 w-16">Capa</th>
+            <th class="px-3 py-3">Título</th>
+            <th class="px-3 py-3 hidden md:table-cell">Autor</th>
+            <th class="px-3 py-3 hidden lg:table-cell">Categoria</th>
+            <th class="px-3 py-3">Status</th>
+            <th class="px-3 py-3 hidden md:table-cell">Data</th>
+            <th class="px-3 py-3 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="posts-tbody">
+          {% for post in page_obj %}
+          <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors group"
+              data-id="{{ post.pk }}" data-order="{{ post.order }}">
+            <td class="px-5 py-3">
+              <input type="checkbox" name="selected_ids" value="{{ post.pk }}"
+                     class="row-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+            </td>
+            <td class="px-3 py-3 cursor-grab text-slate-300 hover:text-slate-500">
+              <i class="fas fa-grip-vertical drag-handle"></i>
+            </td>
+            <td class="px-3 py-3">
+              {% if post.thumbnail %}
+                <img src="{{ post.thumbnail.url }}" alt=""
+                     class="w-12 h-9 object-cover rounded-lg border border-slate-100">
+              {% else %}
+                <div class="w-12 h-9 bg-slate-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-image text-slate-300 text-xs"></i>
+                </div>
+              {% endif %}
+            </td>
+            <td class="px-3 py-3 max-w-xs">
+              <p class="text-sm font-medium text-slate-900 truncate">
+                {{ post|default:'(sem título)' }}
+              </p>
+            </td>
+            <td class="px-3 py-3 hidden md:table-cell">
+              <span class="text-sm text-slate-500">{{ post.author|default:'—' }}</span>
+            </td>
+            <td class="px-3 py-3 hidden lg:table-cell">
+              {% if post.category %}
+                <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-700">
+                  {% if post.category.color %}
+                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:{{ post.category.color }};"></span>
+                  {% endif %}
+                  {{ post.category }}
+                </span>
+              {% else %}
+                <span class="text-slate-400 text-sm">—</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-3">
+              {% if post.status == 'published' %}
+                <span class="badge-published"><i class="fas fa-circle text-xs mr-1"></i>Publicado</span>
+              {% else %}
+                <span class="badge-draft"><i class="fas fa-circle text-xs mr-1"></i>Rascunho</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-3 hidden md:table-cell">
+              <span class="text-xs text-slate-400">{{ post.created_at|date:"d/m/Y" }}</span>
+            </td>
+            <td class="px-3 py-3 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <a href="{% url 'dashboard:post_edit' post.pk %}"
+                   class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                   title="Editar">
+                  <i class="fas fa-pen text-xs"></i>
+                </a>
+                <form method="post" action="{% url 'dashboard:post_delete' post.pk %}"
+                      onsubmit="return confirm('Excluir este post permanentemente?')" class="inline">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Excluir">
+                    <i class="fas fa-trash-alt text-xs"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-between">
+      <p class="text-sm text-slate-500">
+        Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} posts
+      </p>
+      <div class="flex gap-1">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+             class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm">
+            <i class="fas fa-chevron-left text-xs"></i>
+          </a>
+        {% endif %}
+        <span class="w-9 h-9 flex items-center justify-center text-sm font-medium text-slate-700">
+          {{ page_obj.number }}
+        </span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"
+             class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm">
+            <i class="fas fa-chevron-right text-xs"></i>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="py-16 text-center">
+      <i class="fas fa-file-alt text-slate-200 text-5xl mb-4"></i>
+      <p class="text-slate-500 font-medium">Nenhum post encontrado</p>
+      {% if search_q %}
+        <p class="text-slate-400 text-sm mt-1">Tente outro termo de busca</p>
+      {% else %}
+        <a href="{% url 'dashboard:post_create' %}" class="mt-4 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
+          <i class="fas fa-plus"></i> Criar primeiro post
+        </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ── SortableJS drag-drop ordering ────────────────────────────────────
+const tbody = document.getElementById('posts-tbody');
+if (tbody) {
+  Sortable.create(tbody, {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'opacity-40',
+    onEnd: function() {
+      const rows = tbody.querySelectorAll('tr[data-id]');
+      const data = Array.from(rows).map((row, i) => ({ id: +row.dataset.id, order: i }));
+      fetch('{% url "dashboard:posts_reorder" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify(data),
+      })
+      .then(r => r.json())
+      .then(d => { if (d.status !== 'ok') console.error('Reorder error:', d.error); });
+    }
+  });
+}
+
+// ── Bulk selection ───────────────────────────────────────────────────
+const selectAll = document.getElementById('select-all');
+if (selectAll) {
+  selectAll.addEventListener('change', function() {
+    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = this.checked);
+    updateBulkToolbar();
+  });
+  document.querySelectorAll('.row-checkbox').forEach(cb => cb.addEventListener('change', updateBulkToolbar));
+}
+
+function updateBulkToolbar() {
+  const checked = document.querySelectorAll('.row-checkbox:checked');
+  const toolbar = document.getElementById('bulk-toolbar');
+  if (!toolbar) return;
+  if (checked.length > 0) {
+    toolbar.classList.remove('hidden');
+    document.getElementById('selected-count').textContent = checked.length + ' selecionado(s)';
+  } else {
+    toolbar.classList.add('hidden');
+  }
+}
+
+function bulkAction(action) {
+  document.getElementById('bulk-action-input').value = action;
+  document.getElementById('bulk-form').submit();
+}
+</script>
+{% endblock %}

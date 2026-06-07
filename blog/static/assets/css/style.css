@@ -1,0 +1,1153 @@
+/* static/assets/css/style.css */
+
+/* ============================================ */
+/* 1. PALETAS DE TEMA (VERSÃO SUAVE)           */
+/* ============================================ */
+
+/* 1. TEMA PADRÃO: Pastel Blue (Suave) */
+:root, body.theme-serene {
+    --bg-primary: #f8f9fa; /* Cinza muito claro */
+    --bg-section-1: #ffffff;
+    --bg-section-2: #f1f3f5;
+    --text-heading: #1a202c; /* Quase preto */
+    --text-primary: #2d3748; /* Cinza escuro */
+    --text-secondary: #718096; /* Cinza médio */
+    --color-accent: #a5b4fc; /* Azul lavanda suave */
+    --border-color: rgba(203, 213, 225, 0.7);
+    --shadow-color: rgba(165, 180, 252, 0.1);
+    --bg-card-optimized: rgba(255, 255, 255, 0.97);
+}
+
+/* 2. TEMA: Deep Navy (Escuro e Suave) */
+body.theme-midnight {
+    --bg-primary: #111827; /* Azul marinho muito escuro */
+    --bg-section-1: #1f2937;
+    --bg-section-2: #111827;
+    --text-heading: #f9fafb; /* Branco suave */
+    --text-primary: #d1d5db; /* Cinza claro */
+    --text-secondary: #9ca3af; /* Cinza médio-claro */
+    --color-accent: #93c5fd; /* Azul céu pálido */
+    --border-color: rgba(55, 65, 81, 0.7);
+    --shadow-color: rgba(147, 197, 253, 0.1);
+    --bg-card-optimized: rgba(31, 41, 55, 0.97);
+}
+
+/* 3. TEMA: Terracotta (Quente e Suave) */
+body.theme-earth {
+    --bg-primary: #fef9f4; /* Bege muito claro */
+    --bg-section-1: #ffffff;
+    --bg-section-2: #fdf2e9;
+    --text-heading: #44403c; /* Cinza quente escuro */
+    --text-primary: #57534e; /* Cinza quente */
+    --text-secondary: #a8a29e; /* Cinza quente claro */
+    --color-accent: #fca5a5; /* Rosa terracota suave */
+    --border-color: rgba(213, 184, 153, 0.6);
+    --shadow-color: rgba(252, 165, 165, 0.1);
+    --bg-card-optimized: rgba(254, 249, 244, 0.97);
+}
+
+/* 4. TEMA: Sage Green (Verde Suave) */
+body.theme-mint {
+    --bg-primary: #f6fbf8; /* Branco com leve tom de verde */
+    --bg-section-1: #ffffff;
+    --bg-section-2: #effcf4;
+    --text-heading: #1e2923; /* Verde muito escuro */
+    --text-primary: #3c4a43; /* Cinza esverdeado */
+    --text-secondary: #82958b; /* Cinza esverdeado claro */
+    --color-accent: #86efac; /* Verde menta claro */
+    --border-color: rgba(186, 230, 202, 0.6);
+    --shadow-color: rgba(134, 239, 172, 0.1);
+    --bg-card-optimized: rgba(246, 251, 248, 0.97);
+}
+
+/* 5. TEMA: Dusty Rose (Rosa Queimado Suave) */
+body.theme-rosewater {
+    --bg-primary: #fff7f7; /* Branco com tom rosado */
+    --bg-section-1: #ffffff;
+    --bg-section-2: #fff1f2;
+    --text-heading: #4c2226; /* Marrom rosado escuro */
+    --text-primary: #6b4c4e; /* Cinza rosado */
+    --text-secondary: #b89fa2; /* Cinza rosado claro */
+    --color-accent: #fda4af; /* Rosa pálido */
+    --border-color: rgba(254, 205, 211, 0.6);
+    --shadow-color: rgba(253, 164, 175, 0.1);
+    --bg-card-optimized: rgba(255, 247, 247, 0.97);
+}
+
+/* 6. TEMA: Neutral Slate (Cinza Neutro) */
+body.theme-slate {
+    --bg-primary: #f8fafc; /* Cinza muito claro */
+    --bg-section-1: #ffffff;
+    --bg-section-2: #f1f5f9;
+    --text-heading: #0f172a; /* Cinza ardósia escuro */
+    --text-primary: #475569; /* Cinza ardósia */
+    --text-secondary: #94a3b8; /* Cinza ardósia claro */
+    --color-accent: #94a3b8; /* Mesmo cinza claro como destaque */
+    --border-color: rgba(203, 213, 225, 0.6);
+    --shadow-color: rgba(148, 163, 184, 0.1);
+    --bg-card-optimized: rgba(255, 255, 255, 0.97);
+}
+
+/* 7. TEMA: Warm Latte (Marrom Suave) */
+body.theme-latte {
+    --bg-primary: #fcfaf8; /* Off-white quente */
+    --bg-section-1: #ffffff;
+    --bg-section-2: #f7f3ef;
+    --text-heading: #4e443c; /* Marrom escuro */
+    --text-primary: #78685d; /* Marrom médio */
+    --text-secondary: #b5a9a0; /* Marrom claro */
+    --color-accent: #d2b48c; /* Tan / Trigo suave */
+    --border-color: rgba(217, 199, 178, 0.6);
+    --shadow-color: rgba(210, 180, 140, 0.1);
+    --bg-card-optimized: rgba(252, 250, 248, 0.97);
+}
+
+/* 8. TEMA: Oceanic Depths (Azul Petróleo Escuro e Suave) */
+body.theme-oceanic {
+    --bg-primary: #0c141c; /* Azul petróleo muito escuro */
+    --bg-section-1: #182836;
+    --bg-section-2: #0c141c;
+    --text-heading: #e0e7f1; /* Branco azulado */
+    --text-primary: #b4cce0; /* Cinza azulado claro */
+    --text-secondary: #74a0c0; /* Cinza azulado médio */
+    --color-accent: #5db4d9; /* Azul aço suave */
+    --border-color: rgba(0, 148, 198, 0.2);
+    --shadow-color: rgba(93, 180, 217, 0.1);
+    --bg-card-optimized: rgba(24, 40, 54, 0.97);
+}
+
+/* 9. TEMA: Amethyst (Roxo) */
+body.theme-amethyst {
+    --bg-primary: #f9f7ff;
+    --bg-section-1: #ffffff;
+    --bg-section-2: #f4f0ff;
+    --text-heading: #2c233d;
+    --text-primary: #55486b;
+    --text-secondary: #978eab;
+    --color-accent: #673de6;
+    --border-color: rgba(163, 136, 247, 0.5);
+    --shadow-color: rgba(103, 61, 230, 0.1);
+    --bg-card-optimized: rgba(249, 247, 255, 0.97);
+}
+
+/* 10. TEMA: Azure (Azul Ciano) */
+body.theme-azure {
+    --bg-primary: #f5fcff;
+    --bg-section-1: #ffffff;
+    --bg-section-2: #e6f7ff;
+    --text-heading: #0e2a3b;
+    --text-primary: #2c5b76;
+    --text-secondary: #7ba0b4;
+    --color-accent: #00b3ff;
+    --border-color: rgba(90, 208, 255, 0.5);
+    --shadow-color: rgba(0, 179, 255, 0.1);
+    --bg-card-optimized: rgba(245, 252, 255, 0.97);
+}
+
+/* 11. TEMA: Forest (Verde Escuro) */
+body.theme-forest {
+    --bg-primary: #f6fbf9;
+    --bg-section-1: #ffffff;
+    --bg-section-2: #eef9f5;
+    --text-heading: #004d33;
+    --text-primary: #006241;
+    --text-secondary: #859b92;
+    --color-accent: #006241;
+    --border-color: rgba(52, 211, 153, 0.5);
+    --shadow-color: rgba(0, 98, 65, 0.1);
+    --bg-card-optimized: rgba(246, 251, 249, 0.97);
+}
+
+/* 12. NOVO TEMA: Aqua (Branco e Azul Vibrante) */
+body.theme-aqua {
+    --bg-primary: #ffffff;
+    --bg-section-1: #ffffff;
+    --bg-section-2: #f0f9ff; /* Azul muito claro para contraste sutil */
+    --text-heading: #1a202c; /* Quase preto para alto contraste */
+    --text-primary: #2d3748; /* Cinza escuro */
+    --text-secondary: #718096; /* Cinza médio */
+    --color-accent: #00b3ff; /* Azul vibrante como destaque principal */
+    --border-color: rgba(226, 232, 240, 0.8); /* Borda cinza clara neutra */
+    --shadow-color: rgba(0, 179, 255, 0.1);
+    --bg-card-optimized: rgba(255, 255, 255, 0.98);
+}
+
+
+/* ============================================ */
+/* 2. ESTILOS GLOBAIS                          */
+/* ============================================ */
+
+* { 
+    box-sizing: border-box; 
+}
+
+body { 
+    background-color: var(--bg-primary); 
+    color: var(--text-primary); 
+    font-family: 'Inter', sans-serif; 
+    line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease; 
+}
+
+.section-bg-1, .section-bg-2 { 
+    transition: background-color 0.3s ease; 
+}
+.section-bg-1 { background-color: var(--bg-section-1); }
+.section-bg-2 { background-color: var(--bg-section-2); }
+
+
+/* ============================================ */
+/* 3. ANIMAÇÕES OTIMIZADAS                     */
+/* ============================================ */
+
+.fade-in-element { 
+    opacity: 0; 
+    transform: translateY(20px); 
+    transition: opacity 0.5s ease, transform 0.5s ease; 
+    will-change: transform, opacity;
+}
+
+.fade-in-element.is-visible { 
+    opacity: 1; 
+    transform: translateY(0); 
+}
+
+.delay-100 { transition-delay: 0.1s; }
+.delay-200 { transition-delay: 0.2s; }
+.delay-300 { transition-delay: 0.3s; }
+.delay-400 { transition-delay: 0.4s; }
+.delay-500 { transition-delay: 0.5s; }
+
+/* ============================================ */
+/* 4. CARDS E COMPONENTES                      */
+/* ============================================ */
+
+.rounded-t-2xl {
+    border-top-left-radius: 0rem !important;
+    border-top-right-radius: 0rem !important;
+}
+
+.glass-card { 
+    background: var(--bg-card-optimized); 
+    border: 1px solid var(--border-color); 
+    border-radius: 0.5rem; 
+    box-shadow: 0 4px 15px -2px var(--shadow-color); 
+    transition: transform 0.3s ease, box-shadow 0.3s ease; 
+    overflow: hidden;
+    will-change: transform, box-shadow;
+}
+
+.glass-card:hover { 
+    transform: translateY(-6px); 
+    box-shadow: 0 10px 25px -5px var(--shadow-color);
+}
+
+.glass-card:hover .fas.fa-arrow-right {
+    transform: translateX(3px);
+}
+
+/* ============================================ */
+/* 4.1. CARD DE DESTAQUE (HERO)                */
+/* ============================================ */
+
+.hero-section {
+    height: 100vh;
+    position: relative;
+    display: flex;
+}
+
+.featured-post-hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+    height: 100%;
+    width: 100%;
+    border-radius: 0;
+    overflow: hidden;
+    color: #ffffff;
+    text-decoration: none;
+    background-color: var(--bg-section-2);
+}
+
+.featured-post-bg-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.4s ease-out;
+    will-change: transform;
+}
+
+.featured-post-hero:hover .featured-post-bg-image {
+    transform: scale(1.05);
+}
+
+.featured-post-hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.1) 50%, transparent 100%);
+    pointer-events: none;
+}
+
+.featured-post-content {
+    position: relative;
+    z-index: 2;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .featured-post-content {
+        padding: 2.5rem 1rem;
+        max-width: 65%;
+    }
+}
+
+.featured-post-title {
+    font-size: clamp(2.25rem, 6vw, 3.5rem);
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.featured-post-excerpt {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.read-more-btn-featured {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 600;
+    color: #ffffff;
+    text-decoration: none;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    background: rgba(255,255,255,0.1);
+    padding: 0.75rem 1.5rem;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 50px;
+}
+
+.featured-post-hero:hover .read-more-btn-featured {
+    background: rgba(255,255,255,0.2);
+}
+.featured-post-hero:hover .read-more-btn-featured i {
+    transform: translateX(4px);
+}
+
+/* Classe para o conteúdo restante da página */
+.page-content {
+    position: relative;
+    z-index: 5;
+    background-color: var(--bg-primary);
+}
+
+
+/* ============================================ */
+/* 4.2. CABEÇALHO DE PÁGINA INTERNA            */
+/* ============================================ */
+
+.page-header {
+    background-color: var(--bg-section-2);
+    padding-top: 120px;
+    padding-bottom: 4rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+@media (min-width: 768px) {
+    .page-header {
+        padding-top: 140px;
+    }
+}
+
+.page-header .page-title {
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 800;
+    color: var(--text-heading);
+    line-height: 1.2;
+}
+
+.page-header .page-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0.75rem auto 0;
+}
+
+
+/* ============================================ */
+/* 5. TAGS TRANSLÚCIDAS OTIMIZADAS             */
+/* ============================================ */
+
+.tag { 
+    display: inline-block; 
+    padding: 0.35rem 0.7rem; 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    color: white; 
+    border-radius: 10px; 
+    text-decoration: none;
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    
+    /* ▼▼▼ CORREÇÃO PARA TRUNCAMENTO DE TEXTO ▼▼▼ */
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.featured-post-content .tag {
+    background-color: var(--color-accent);
+}
+
+.tag::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: inherit;
+    z-index: -1;
+    transition: background-color 0.2s ease;
+}
+
+.tag:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tag:hover::before {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.mosaic-grid .md\:col-span-2.md\:row-span-2 .tag {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 10px;
+}
+
+.post-meta {
+    margin: 1.5rem 0;
+    padding: 1.2rem;
+    background: var(--bg-card-optimized);
+    border-radius: 0.8rem;
+    border: 1px solid var(--border-color);
+}
+
+.post-content-wrapper {
+    background: var(--bg-card-optimized);
+    border-radius: 1.2rem;
+    padding: 2.5rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 6px 20px var(--shadow-color);
+    margin-top: 1.5rem;
+}
+
+/* ============================================ */
+/* 6. GRID RESPONSIVO (CORRIGIDO)              */
+/* ============================================ */
+
+.mosaic-grid { 
+    display: grid; 
+    gap: 1.5rem; 
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    justify-content: center;
+}
+
+/* ============================================ */
+/* 7. TRUNCAMENTO DE TEXTO                     */
+/* ============================================ */
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-4 {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-6 {
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ============================================ */
+/* 8. TÍTULOS COMPLETOS NOS CARDS              */
+/* ============================================ */
+
+.glass-card .text-heading {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: unset !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    white-space: normal !important;
+    line-height: 1.3 !important;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    transition: color 0.3s ease;
+}
+
+.mosaic-grid .md\:col-span-2.md\:row-span-2 .glass-card .text-heading {
+    font-size: 1.4rem;
+    line-height: 1.2;
+    margin-bottom: 1.2rem;
+}
+
+.glass-card {
+    min-height: auto;
+}
+
+/* ============================================ */
+/* 9. BOTÃO "LER MAIS" UNIVERSAL               */
+/* ============================================ */
+
+.read-more-btn {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: opacity 0.2s ease, color 0.2s ease;
+    margin-top: auto;
+    padding-top: 0.75rem;
+}
+
+.read-more-btn i {
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+}
+
+.read-more-btn:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+    color: var(--color-accent);
+}
+
+.read-more-btn:hover i {
+    transform: translateX(3px);
+}
+
+.mosaic-grid .md\:col-span-2.md\:row-span-2 .read-more-btn {
+    font-size: 1rem;
+    font-weight: 700;
+    padding-top: 1rem;
+}
+
+.mosaic-grid .md\:col-span-2.md\:row-span-2 .read-more-btn i {
+    font-size: 0.9rem;
+    margin-left: 0.6rem;
+}
+
+/* ============================================ */
+/* 10. POST - ESTILOS ESPECÍFICOS              */
+/* ============================================ */
+
+.post-title {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--text-heading);
+    margin: 1rem 0;
+    text-align: center;
+    transition: color 0.3s ease;
+}
+
+.post-hero-image {
+    border-radius: 1.2rem;
+    overflow: hidden;
+    box-shadow: 0 10px 30px var(--shadow-color);
+    transition: transform 0.25s ease;
+    will-change: transform;
+}
+
+.post-hero-image:hover {
+    transform: translateY(-3px);
+}
+
+.post-hero-image img {
+    width: 100%;
+    height: 350px;
+    object-fit: cover;
+    transition: transform 0.25s ease;
+    will-change: transform;
+}
+
+.post-hero-image:hover img {
+    transform: scale(1.02);
+}
+
+.post-footer {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.post-author-info {
+    padding: 1.5rem;
+    background: var(--bg-section-2);
+    border-radius: 0.8rem;
+    border: 1px solid var(--border-color);
+}
+
+/* ============================================ */
+/* 11. TIPOGRAFIA DO POST                      */
+/* ============================================ */
+
+.post-content {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+}
+
+.post-content h1, 
+.post-content h2, 
+.post-content h3,
+.post-content h4,
+.post-content h5,
+.post-content h6 { 
+    color: var(--text-heading); 
+    margin: 2.5rem 0 1.2rem 0; 
+    font-weight: 700; 
+    transition: color 0.3s ease; 
+    line-height: 1.2;
+}
+
+.post-content h1:first-child,
+.post-content h2:first-child,
+.post-content h3:first-child {
+    margin-top: 0;
+}
+
+.post-content h1 { font-size: 2.2rem; }
+.post-content h2 { font-size: 1.9rem; }
+.post-content h3 { font-size: 1.6rem; }
+.post-content h4 { font-size: 1.3rem; }
+
+.post-content p { 
+    line-height: 1.7; 
+    margin-bottom: 1.5rem; 
+}
+
+.post-content p:first-of-type {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.post-content a { 
+    color: var(--color-accent); 
+    text-decoration: underline; 
+    text-decoration-thickness: 1px; 
+    text-underline-offset: 3px; 
+    transition: opacity 0.2s ease, text-decoration-thickness 0.2s ease;
+    font-weight: 600;
+}
+
+.post-content a:hover {
+    opacity: 0.8;
+    text-decoration-thickness: 2px;
+}
+
+.post-content blockquote { 
+    border-left: 4px solid var(--color-accent); 
+    color: var(--text-secondary); 
+    padding: 1.5rem; 
+    margin: 2rem 0; 
+    font-style: italic; 
+    background: var(--bg-section-2);
+    border-radius: 0.8rem;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 10px var(--shadow-color);
+}
+
+.post-content ul, 
+.post-content ol { 
+    margin: 1.5rem 0;
+    padding-left: 1.8rem;
+}
+
+.post-content li { 
+    margin-bottom: 0.8rem; 
+}
+
+.post-content img { 
+    border-radius: 0.8rem; 
+    margin: 2rem auto; 
+    display: block;
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 6px 20px var(--shadow-color);
+    transition: transform 0.25s ease;
+    will-change: transform;
+}
+
+.post-content img:hover {
+    transform: translateY(-2px);
+}
+
+.post-content code {
+    background: var(--bg-section-2);
+    color: var(--color-accent);
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.4rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.post-content pre {
+    background: var(--bg-section-2);
+    padding: 1.5rem;
+    border-radius: 0.8rem;
+    overflow-x: auto;
+    margin: 2rem 0;
+    border: 1px solid var(--border-color);
+}
+
+.post-content pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.post-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    background: var(--bg-card-optimized);
+    border-radius: 0.8rem;
+    overflow: hidden;
+    box-shadow: 0 4px 15px var(--shadow-color);
+}
+
+.post-content th,
+.post-content td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.post-content th {
+    background: var(--bg-section-2);
+    font-weight: 700;
+    color: var(--text-heading);
+}
+
+/* ============================================ */
+/* 12. CARDS GRANDES OTIMIZADOS                */
+/* ============================================ */
+
+.mosaic-grid .md\:col-span-2.md\:row-span-2 .glass-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.mosaic-grid .md\:col-span-2.md\:row-span-2 .glass-card > div:last-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1.8rem;
+}
+
+.mosaic-grid .md\:col-span-2.md\:row-span-2 .text-secondary {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+
+.mosaic-grid .md\:col-span-2.md\:row-span-2 .glass-card > div:first-child {
+    height: 250px;
+    min-height: 250px;
+}
+
+/* ============================================ */
+/* 13. FORMULÁRIOS                             */
+/* ============================================ */
+
+.form-input, 
+.form-textarea { 
+    width: 100%; 
+    padding: 0.7rem 1rem; 
+    background-color: var(--bg-section-2); 
+    border: 1px solid var(--border-color); 
+    border-radius: 0.5rem; 
+    color: var(--text-primary); 
+    transition: border-color 0.2s ease, box-shadow 0.2s ease; 
+    font-family: inherit;
+}
+
+.form-input::placeholder, 
+.form-textarea::placeholder { 
+    color: var(--text-secondary); 
+}
+
+.form-input:focus, 
+.form-textarea:focus { 
+    outline: none; 
+    border-color: var(--color-accent); 
+    box-shadow: 0 0 0 2px var(--shadow-color); 
+}
+
+.submit-button { 
+    background-color: var(--color-accent); 
+    color: white; 
+    font-weight: 600; 
+    padding: 0.7rem 1.5rem; 
+    border-radius: 0.5rem; 
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.2s ease; 
+    font-family: inherit;
+}
+
+.submit-button:hover { 
+    opacity: 0.9; 
+    transform: translateY(-1px);
+}
+
+.submit-button:active {
+    transform: translateY(0);
+}
+
+/* ============================================ */
+/* 14. CARROSSEL (VERSÃO FINAL E CORRIGIDA)    */
+/* ============================================ */
+
+.carousel-wrapper {
+    padding: 0 1rem;
+    margin: 0 -1rem;
+}
+
+.carousel-container {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto; 
+    scroll-snap-type: x mandatory; 
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; 
+    padding-bottom: 1rem;
+    justify-content: center;
+}
+
+.carousel-container::-webkit-scrollbar { 
+    display: none; 
+}
+
+.carousel-item { 
+    width: 280px;
+    flex-shrink: 0;
+    scroll-snap-align: center;
+}
+
+/* ============================================ */
+/* 15. RESPONSIVIDADE (SEÇÃO REESTRUTURADA)    */
+/* ============================================ */
+
+/* Estilos Mobile (até 767px) - Padrão */
+.post-title { font-size: 1.8rem; }
+.post-content { font-size: 1rem; }
+.post-content h2 { font-size: 1.5rem; }
+
+@media (max-width: 480px) {
+    .post-title { font-size: 1.5rem; }
+    .featured-post-title { font-size: clamp(1.8rem, 6vw, 2.25rem); }
+}
+
+
+/* Estilos Tablet (768px - 1023px) */
+@media (min-width: 768px) {
+    .mosaic-grid .md\:col-span-2.md\:row-span-2 {
+        grid-column: span 2 / span 2;
+        grid-row: span 1 / span 1;
+    }
+}
+
+
+/* Estilos Desktop (1024px e acima) */
+@media (min-width: 1024px) {
+    .mosaic-grid .md\:col-span-2.md\:row-span-2 {
+        grid-column: span 2 / span 2;
+        grid-row: span 2 / span 2;
+    }
+}
+
+
+/* ============================================ */
+/* 16. UTILITÁRIOS FINAIS                      */
+/* ============================================ */
+
+.text-primary { 
+    color: var(--text-primary); 
+    transition: color 0.3s ease;
+}
+
+.text-secondary { 
+    color: var(--text-secondary); 
+    transition: color 0.3s ease;
+}
+
+.text-heading { 
+    color: var(--text-heading); 
+    transition: color 0.3s ease;
+}
+
+.line-height-relaxed {
+    line-height: 1.7;
+}
+
+/* ============================================ */
+/* 17. MELHORIAS VISUAIS                       */
+/* ============================================ */
+
+html { 
+    scroll-behavior: smooth; 
+}
+
+::selection {
+    background-color: var(--color-accent);
+    color: white;
+}
+
+::-moz-selection {
+    background-color: var(--color-accent);
+    color: white;
+}
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+a {
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--color-accent);
+}
+
+/* ============================================ */
+/* 18. ACESSIBILIDADE                          */
+/* ============================================ */
+
+.glass-card:focus-within {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.submit-button:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      will-change: auto !important;
+    }
+}
+
+/* ============================================ */
+/* 19. DARK MODE AUTOMÁTICO                    */
+/* ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    body:not([class*="theme-"]) {
+        --bg-primary: #111827; /* Azul marinho muito escuro */
+        --bg-section-1: #1f2937;
+        --bg-section-2: #111827;
+        --text-heading: #f9fafb; /* Branco suave */
+        --text-primary: #d1d5db; /* Cinza claro */
+        --text-secondary: #9ca3af; /* Cinza médio-claro */
+        --color-accent: #93c5fd; /* Azul céu pálido */
+        --border-color: rgba(55, 65, 81, 0.7);
+        --shadow-color: rgba(147, 197, 253, 0.1);
+        --bg-card-optimized: rgba(31, 41, 55, 0.97);
+    }
+}
+
+/* ============================================ */
+/* 20. PAGINAÇÃO (NOVO E CORRIGIDO)            */
+/* ============================================ */
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 0;
+}
+
+.pagination {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagination li a,
+.pagination li span {
+    display: flex; /* Essencial para alinhar o conteúdo interno */
+    align-items: center; /* Alinha verticalmente o número ou ícone */
+    justify-content: center; /* Alinha horizontalmente */
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--bg-section-1);
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.pagination li a:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background-color: var(--bg-section-2);
+}
+
+.pagination li.active a {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: white;
+    cursor: default;
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.pagination li.disabled span {
+    color: var(--border-color);
+    cursor: not-allowed;
+}
+
+.pagination li.ellipsis span {
+    border: none;
+    background: transparent;
+}
+
+
+
+/* ============================================ */
+/* 21. BOTÕES DE AÇÃO FLUTUANTES (FAB) - CORRIGIDO */
+/* ============================================ */
+
+.fab-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 50;
+    display: flex;
+    flex-direction: column-reverse; /* Botão de topo fica em cima */
+    gap: 1rem;
+    
+    /* Estado inicial: escondido */
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fab-container.visible {
+    /* Estado visível: aparece suavemente */
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Renomeado de .fab para .fab-btn para evitar conflito */
+.fab-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem; /* Tamanho do ícone */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+}
+
+.fab-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.scroll-top-btn {
+    background-color: var(--color-accent);
+}
+
+.whatsapp-btn {
+    background-color: #25D366; /* Verde oficial do WhatsApp */
+    font-size: 1.8rem; /* Ícone do WhatsApp é um pouco maior */
+}
+
+/* ============================================ */
+/* 22. CORREÇÕES DE RESPONSIVIDADE ADICIONAIS  */
+/* ============================================ */
+
+/* Centraliza e ajusta o formulário em telas pequenas */
+@media (max-width: 767px) {
+    
+    /* Centraliza o container do botão */
+    form .text-right {
+      text-align: center;
+    }
+
+    /* ▼▼▼ CÓDIGO ADICIONADO AQUI ▼▼▼ */
+    /* Faz o botão ocupar 100% da largura */
+    .submit-button {
+        width: 100%;
+    }
+}

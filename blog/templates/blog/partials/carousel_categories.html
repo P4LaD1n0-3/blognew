@@ -1,0 +1,209 @@
+{% load static i18n %}
+{% comment %}
+Este é o novo componente de carrossel de categorias.
+Ele é totalmente independente, com seu próprio CSS e JavaScript.
+{% endcomment %}
+
+<style>
+    .category-carousel-section {
+        background-color: var(--bg-section-1);
+        padding: 4rem 0;
+        position: relative;
+    }
+
+    .category-carousel-wrapper {
+        position: relative;
+    }
+
+    .category-carousel-container {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding: 1rem; 
+        margin: 0 -1rem;
+        align-items: stretch;
+    }
+
+    .category-carousel-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .category-carousel-item {
+        flex: 0 0 90%; 
+        scroll-snap-align: center;
+        padding: 0 0.75rem;
+        display: flex;
+    }
+
+    @media (min-width: 640px) {
+        .category-carousel-item { flex-basis: 45%; }
+    }
+    @media (min-width: 768px) {
+        .category-carousel-item { flex-basis: 33.33%; }
+    }
+    @media (min-width: 1024px) {
+        .category-carousel-item { flex-basis: 25%; }
+    }
+    @media (min-width: 1280px) {
+        .category-carousel-item { flex-basis: 20%; }
+    }
+
+    .category-carousel-card {
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        width: 100%;
+    }
+
+    .category-carousel-card .glass-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .card-text-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .category-carousel-title {
+        color: var(--text-heading);
+        font-weight: 700;
+        transition: color 0.3s ease;
+        line-height: 1.4;
+        height: 2.8em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        text-overflow: ellipsis;
+    }
+
+    .category-carousel-card:hover .category-carousel-title {
+        color: var(--color-accent);
+    }
+
+    .carousel-controls {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    .carousel-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--bg-card-optimized);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px var(--shadow-color);
+    }
+    .carousel-btn:hover {
+        background: var(--color-accent);
+        color: white;
+        transform: scale(1.05);
+    }
+    .carousel-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: scale(1);
+    }
+</style>
+
+<section class="category-carousel-section">
+    <div class="container mx-auto px-4">
+        <div class="mb-8 fade-in-element">
+            <h3 class="text-2xl font-bold text-heading">{% trans "Explore por Categoria" %}</h3>
+        </div>
+
+        <div class="category-carousel-wrapper">
+            <div class="category-carousel-container" id="category-carousel">
+                {% for category in carousel_categories %}
+                    <div class="category-carousel-item fade-in-element">
+                        <a href="{{ category.get_absolute_url }}" class="category-carousel-card group">
+                            <div class="glass-card p-4">
+                                <div class="h-32 bg-cover bg-center rounded-lg mb-4" 
+                                     style="{% if category.image %}background-image: url('{{ category.image.url }}');{% else %}background-color: {{ category.color|default:'#64748b' }};{% endif %}">
+                                </div>
+                                <div class="card-text-content">
+                                    <h4 class="category-carousel-title">{{ category.name }}</h4>
+                                    <p class="text-sm text-secondary">
+                                        {% blocktrans count count=category.posts.count %}
+                                            {{ count }} post
+                                        {% plural %}
+                                            {{ count }} posts
+                                        {% endblocktrans %}
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                {% empty %}
+                     <div class="w-full text-center text-secondary col-span-full py-8">
+                        {% trans "Nenhuma categoria com posts para exibir." %}
+                     </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if carousel_categories|length > 1 %}
+        <div class="carousel-controls">
+            <button class="carousel-btn" id="carousel-prev-btn" aria-label="{% trans "Categoria anterior" %}">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="carousel-btn" id="carousel-next-btn" aria-label="{% trans "Próxima categoria" %}">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const carousel = document.getElementById('category-carousel');
+    const prevButton = document.getElementById('carousel-prev-btn');
+    const nextButton = document.getElementById('carousel-next-btn');
+
+    if (carousel && prevButton && nextButton) {
+        const updateButtons = () => {
+            const scrollLeft = Math.ceil(carousel.scrollLeft);
+            const scrollWidth = carousel.scrollWidth;
+            const width = carousel.clientWidth;
+            
+            prevButton.disabled = scrollLeft < 10;
+            nextButton.disabled = scrollLeft >= (scrollWidth - width - 10);
+        };
+
+        const scrollCarousel = (direction) => {
+            const itemWidth = carousel.querySelector('.category-carousel-item').offsetWidth;
+            carousel.scrollBy({ 
+                left: itemWidth * direction, 
+                behavior: 'smooth' 
+            });
+        };
+
+        prevButton.addEventListener('click', () => scrollCarousel(-1));
+        nextButton.addEventListener('click', () => scrollCarousel(1));
+
+        let debounceTimer;
+        carousel.addEventListener('scroll', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateButtons, 100);
+        });
+
+        window.addEventListener('resize', updateButtons);
+        updateButtons();
+    }
+});
+</script>

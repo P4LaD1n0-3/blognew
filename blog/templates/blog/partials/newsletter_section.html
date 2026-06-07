@@ -1,0 +1,133 @@
+{% load i18n %}
+{% comment %}
+Este arquivo é um componente modular para a seção de inscrição na newsletter.
+Ele é incluído em outras páginas, como a index.html.
+A variável `newsletter_form` é fornecida pelo contexto da view que renderiza o template pai.
+{% endcomment %}
+
+<style>
+/* CSS específico para o componente de newsletter */
+.newsletter-card {
+    background: var(--bg-card);
+    border-radius: 0.5rem;
+    padding: 3rem 2rem;
+    text-align: center;
+    max-width: 800px;
+    margin: auto;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px var(--shadow-color);
+    overflow: hidden;
+    position: relative;
+}
+
+.newsletter-title {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
+    color: var(--text-heading);
+    margin-bottom: 1rem;
+}
+
+.newsletter-subtitle {
+    color: var(--text-secondary);
+    max-width: 500px;
+    margin: 0 auto 1.5rem; /* Reduzido o margin-bottom para acomodar a msg */
+    line-height: 1.6;
+}
+
+.newsletter-form {
+    display: flex;
+    max-width: 450px;
+    margin: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 50px;
+    padding: 0.5rem;
+    background-color: var(--bg-primary);
+    transition: box-shadow 0.3s ease;
+}
+
+.newsletter-form:focus-within {
+    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb, 59, 130, 246), 0.4);
+}
+
+.newsletter-input {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    padding: 0.5rem 1.25rem;
+    color: var(--text-primary);
+    outline: none;
+    font-size: 1rem;
+}
+
+.newsletter-button {
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.75rem;
+    border-radius: 50px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.newsletter-button:hover {
+    filter: brightness(95%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(var(--color-accent-rgb, 59, 130, 246), 0.3);
+}
+
+/* Media Query para dispositivos móveis */
+@media (max-width: 500px) {
+    .newsletter-form {
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .newsletter-input {
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-primary);
+        border-radius: 50px;
+        padding: 0.75rem 1.25rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .newsletter-button {
+        width: 100%;
+    }
+}
+</style>
+
+<div class="section-bg-1 py-16">
+    <section class="container mx-auto px-4" id="newsletter-section">
+        <div class="newsletter-card fade-in-element">
+            <div class="newsletter-content">
+                <h3 class="newsletter-title">{% trans "Junte-se à nossa comunidade" %}</h3>
+                <p class="newsletter-subtitle">{% trans "Receba análises, notícias e insights diretamente no seu e-mail. Sem spam, apenas conteúdo de qualidade." %}</p>
+                
+                <div id="newsletter-messages" class="max-w-md mx-auto mb-6">
+                    {% if messages %}
+                        {% for message in messages %}
+                            {% if 'newsletter' in message.tags %}
+                                <div class="p-3 mb-4 text-sm rounded-lg {% if 'success' in message.tags %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                    {{ message }}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <form action="{% url 'blog:newsletter_subscribe' %}" method="post" class="newsletter-form">
+                    {% csrf_token %}
+                    {{ newsletter_form.email }}
+                    <button type="submit" class="newsletter-button">{% trans "Inscrever-se" %}</button>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>

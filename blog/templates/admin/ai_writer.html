@@ -1,0 +1,246 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}IA Escritor - Geração Automática | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block content %}
+
+
+<div class="ai-writer-wrapper" id="ai-writer-wrapper">
+    <div class="card card-primary card-outline">
+        <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+            <h3 class="card-title"><i class="fas fa-robot mr-2"></i> IA Escritor - Gerador Automático de Matérias</h3>
+        </div>
+        <div class="card-body">
+            {% if messages %}
+                <div class="mb-4">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+
+            <p class="text-muted">Gere artigos completos formatados e identados com imagens usando Inteligência Artificial. Basta fornecer as instruções abaixo e a matéria será automaticamente criada e salva como um Post.</p>
+
+            <form method="post" action="" id="ai-writer-form">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="provider">Provedor de IA <span class="text-danger">*</span></label>
+                            <select name="provider" id="provider" class="form-control" required>
+                                <option value="groq_gpt_oss_120b" {% if saved_provider == 'groq_gpt_oss_120b' %}selected{% endif %}>Groq - GPT-OSS 120B (Melhor Custo-Benefício / 120B Parâmetros)</option>
+                                <option value="groq_llama_70b" {% if saved_provider == 'groq_llama_70b' %}selected{% endif %}>Groq - Llama 3.3 70B (Avançado e Gratuito)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="api_key">Chave de API <span class="text-danger">*</span></label>
+                            <input type="password" name="api_key" id="api_key" class="form-control" placeholder="gsk-... ou sk-..." value="{{ saved_api_key }}" required>
+                            <small class="form-text text-muted">Insira a chave correspondente ao provedor selecionado.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="category">Categoria da Matéria <span class="text-danger">*</span></label>
+                            <select name="category" id="category" class="form-control" required>
+                                <option value="">-- Selecione uma categoria --</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat.id }}" {% if saved_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="author">Autor da Matéria <span class="text-danger">*</span></label>
+                            <select name="author" id="author" class="form-control" required>
+                                <option value="">-- Selecione um autor --</option>
+                                {% for aut in authors %}
+                                    <option value="{{ aut.id }}" {% if saved_author == aut.id|stringformat:"s" %}selected{% endif %}>{{ aut.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="quantity">Quantidade de Matérias <span class="text-danger">*</span></label>
+                            <input type="number" name="quantity" id="quantity" class="form-control" min="1" max="10" value="{{ saved_quantity|default:'1' }}" required>
+                            <small class="form-text text-muted">Quantas matérias únicas você deseja gerar a partir desta instrução? (Se for gerar mais de 3, pode demorar alguns minutos).</small>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="prompt">Instruções para a IA (Tópico, Estilo, Informações Chave) <span class="text-danger">*</span></label>
+                            <textarea name="prompt" id="prompt" class="form-control" rows="5" placeholder="Ex: Escreva um artigo detalhado sobre as inovações tecnológicas de 2026, focando em inteligência artificial e computação quântica. O tom deve ser jornalístico e envolvente." required>{{ saved_prompt }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-2">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="generate_image" name="generate_image" value="1" {% if saved_generate_image %}checked{% endif %}>
+                                <label class="custom-control-label" for="generate_image">Buscar Imagem de Capa na internet exatamente sobre o tema (Geração via IA Gratuita).</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="publish_now" name="publish_now" value="1" {% if saved_publish_now %}checked{% endif %}>
+                                <label class="custom-control-label" for="publish_now">Publicar imediatamente (Se desmarcado, salvará como Rascunho para você revisar).</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary" id="btn-submit">
+                        <i class="fas fa-magic mr-2"></i> Gerar Matéria
+                    </button>
+                    <div id="loading-indicator" style="display: none;" class="mt-3">
+                        <p class="text-primary font-weight-bold" id="loading-text"><i class="fas fa-spinner fa-spin mr-2"></i> Iniciando geração...</p>
+
+                        <div id="terminal-header">
+                            <span style="font-size:12px; color:#888;">Log do pipeline</span>
+                            <button type="button" id="btn-copy-log" title="Copiar log">
+                                <i class="fas fa-copy mr-1"></i> Copiar log
+                            </button>
+                        </div>
+                        <div id="terminal-box" style="background-color: #1e1e1e; color: #00ff00; font-family: 'JetBrains Mono', 'Fira Code', monospace; padding: 18px; border-radius: 8px; height: 320px; overflow-y: auto; font-size: 13px; line-height: 1.6;">
+                            <div><span style="color: #888;">[SISTEMA]</span> Inicializando Pipeline Multi-Agente...</div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ======== COPIAR LOG ========
+    document.getElementById('btn-copy-log').addEventListener('click', function() {
+        const box = document.getElementById('terminal-box');
+        const text = Array.from(box.querySelectorAll('div')).map(d => d.innerText).join('\n');
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = this;
+            btn.innerHTML = '<i class="fas fa-check mr-1"></i> Copiado!';
+            setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy mr-1"></i> Copiar log'; }, 2000);
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        });
+    });
+
+    // ======== PIPELINE SUBMIT ========
+    document.getElementById('ai-writer-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const btn = document.getElementById('btn-submit');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const loadingText = document.getElementById('loading-text');
+        const terminalBox = document.getElementById('terminal-box');
+        
+        const quantity = parseInt(document.getElementById('quantity').value) || 1;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Pipeline Ativo...';
+        loadingIndicator.style.display = 'block';
+        
+        function addLog(text, color="#00ff00") {
+            const time = new Date().toLocaleTimeString();
+            terminalBox.innerHTML += `<div style="margin-bottom: 4px;"><span style="color: #666;">[${time}]</span> <span style="color: ${color};">${text}</span></div>`;
+            terminalBox.scrollTop = terminalBox.scrollHeight;
+        }
+
+        addLog(`🚀 Iniciando pipeline multi-agente para ${quantity} matéria(s)...`, '#00bfff');
+        addLog(`Cada matéria passará por 4 agentes: Pesquisador → Redator → Editor → Curador de Imagens`, '#888');
+
+        let successCount = 0;
+
+        for(let i = 1; i <= quantity; i++) {
+            loadingText.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Pipeline ativo — Matéria ${i} de ${quantity}... (pode levar até 2 minutos)`;
+            addLog(`\n${'='.repeat(50)}`, '#444');
+            addLog(`📝 MATÉRIA ${i}/${quantity} — Acionando 4 agentes especializados...`, '#ffff00');
+            
+            const formData = new FormData(form);
+            formData.append('current_iteration', i);
+            formData.append('quantity', quantity);
+            
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                
+                if(!response.ok) {
+                    addLog(`❌ Erro HTTP: ${response.status}`, '#ff0000');
+                    continue;
+                }
+
+                const data = await response.json();
+                
+                if(data.status === 'success') {
+                    if(data.logs && data.logs.length) {
+                        data.logs.forEach(log => {
+                            let color = '#00ff00';
+                            if(log.includes('RATE LIMIT')) color = '#ffaa00';
+                            else if(log.includes('ERRO') || log.includes('FALHA') || log.includes('⚠️')) color = '#ff6600';
+                            else if(log.includes('PESQUISADOR')) color = '#00bfff';
+                            else if(log.includes('REDATOR')) color = '#ff69b4';
+                            else if(log.includes('EDITOR')) color = '#ffd700';
+                            else if(log.includes('CURADOR') || log.includes('📸')) color = '#da70d6';
+                            else if(log.includes('✅')) color = '#00ff00';
+                            else if(log.includes('🔎')) color = '#87ceeb';
+                            else if(log.includes('===')) color = '#444';
+                            addLog(log, color);
+                        });
+                    }
+                    if(data.thoughts) {
+                        addLog(`💭 Insights do Editor: ${data.thoughts}`, '#ff00ff');
+                    }
+                    addLog(`✅ "${data.title}" — SALVA COM SUCESSO!`, '#00ff00');
+                    successCount++;
+                } else {
+                    addLog(`❌ ${data.error}`, '#ff0000');
+                }
+            } catch(err) {
+                addLog(`❌ Erro de conexão: ${err.message}`, '#ff0000');
+            }
+        }
+        
+        addLog(`\n${'='.repeat(50)}`, '#444');
+        addLog(`📊 RESULTADO FINAL: ${successCount}/${quantity} matéria(s) gerada(s) com sucesso`, '#00bfff');
+        
+        loadingText.innerHTML = `<i class="fas fa-check-circle mr-2"></i> Pipeline concluído!`;
+        btn.innerHTML = '<i class="fas fa-check mr-2"></i> Concluído';
+        
+        if(successCount > 0) {
+            addLog(`🔄 Redirecionando para a lista de posts em 3 segundos...`, '#888');
+            setTimeout(() => {
+                window.location.href = "{% url 'custom_admin:blog_post_changelist' %}";
+            }, 3000);
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-magic mr-2"></i> Tentar Novamente';
+        }
+    });
+</script>
+{% endblock %}

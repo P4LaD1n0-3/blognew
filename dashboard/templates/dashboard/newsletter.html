@@ -1,0 +1,79 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Newsletter{% endblock %}
+{% block breadcrumb %}<span class="mx-2 text-slate-300">/</span> Newsletter{% endblock %}
+{% block page_heading %}Assinantes da Newsletter{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center">
+        <i class="fas fa-paper-plane text-emerald-600 text-sm"></i>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-800">{{ page_obj.paginator.count }} assinante(s)</p>
+        <p class="text-xs text-slate-400">Lista de emails cadastrados</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5">
+      <i class="fas fa-lock text-amber-500 text-xs"></i>
+      <span class="text-xs text-amber-700">Somente leitura</span>
+    </div>
+  </div>
+
+  {% if page_obj.object_list %}
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-slate-50 text-left text-xs text-slate-500 uppercase tracking-wider">
+          <th class="px-6 py-3">Email</th>
+          <th class="px-6 py-3">Data de inscrição</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for sub in page_obj %}
+        <tr class="hover:bg-slate-50/70 transition-colors">
+          <td class="px-6 py-3">
+            <div class="flex items-center gap-3">
+              <div class="w-7 h-7 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span class="text-emerald-600 text-xs font-bold">{{ sub.email|slice:":1"|upper }}</span>
+              </div>
+              <a href="mailto:{{ sub.email }}" class="text-sm text-slate-700 hover:text-indigo-600 font-mono">{{ sub.email }}</a>
+            </div>
+          </td>
+          <td class="px-6 py-3 text-sm text-slate-400">{{ sub.subscribed_at|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-between">
+    <p class="text-sm text-slate-500">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</p>
+    <div class="flex gap-1">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}"
+           class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">
+          <i class="fas fa-chevron-left text-xs"></i>
+        </a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}"
+           class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">
+          <i class="fas fa-chevron-right text-xs"></i>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="py-16 text-center">
+    <i class="fas fa-paper-plane text-slate-200 text-5xl mb-4"></i>
+    <p class="text-slate-500 font-medium">Nenhum assinante ainda</p>
+    <p class="text-slate-400 text-sm mt-1">Os assinantes do formulário de newsletter aparecerão aqui</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

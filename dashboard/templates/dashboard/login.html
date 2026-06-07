@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Login — Painel Master</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="min-h-screen bg-slate-900 flex items-center justify-center p-4" style="background: radial-gradient(ellipse at top, #1e1b4b 0%, #0f172a 60%);">
+
+  <div class="w-full max-w-md">
+    <!-- Card -->
+    <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
+      <!-- Header band -->
+      <div class="bg-indigo-600 px-8 py-8 text-center relative overflow-hidden">
+        <div class="absolute inset-0 opacity-20" style="background: radial-gradient(circle at 20% 80%, #818cf8, transparent 60%), radial-gradient(circle at 80% 20%, #a78bfa, transparent 60%);"></div>
+        <div class="relative">
+          <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-pen-nib text-white text-2xl"></i>
+          </div>
+          <h1 class="text-2xl font-bold text-white">Painel Master</h1>
+          <p class="text-indigo-200 text-sm mt-1">Área administrativa exclusiva</p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="px-8 py-8">
+        {% if error %}
+          <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-700 text-sm flex items-center gap-2 mb-6">
+            <i class="fas fa-circle-exclamation flex-shrink-0"></i>
+            {{ error }}
+          </div>
+        {% endif %}
+
+        <form method="post" class="space-y-5">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+
+          <div>
+            <label for="id_username" class="block text-sm font-medium text-slate-700 mb-1.5">
+              Usuário
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <i class="fas fa-user text-sm"></i>
+              </span>
+              <input type="text" name="username" id="id_username" required autofocus
+                     class="w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                     placeholder="seu.usuario">
+            </div>
+          </div>
+
+          <div>
+            <label for="id_password" class="block text-sm font-medium text-slate-700 mb-1.5">
+              Senha
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <i class="fas fa-lock text-sm"></i>
+              </span>
+              <input type="password" name="password" id="id_password" required
+                     class="w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                     placeholder="••••••••">
+            </div>
+          </div>
+
+          <button type="submit"
+                  class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
+            <i class="fas fa-right-to-bracket"></i>
+            Entrar no Painel
+          </button>
+        </form>
+
+        <p class="text-center text-xs text-slate-400 mt-6">
+          Acesso restrito a administradores autorizados
+        </p>
+      </div>
+    </div>
+
+    <!-- Blog access links -->
+    <div class="flex items-center justify-center gap-4 mt-6">
+      <a href="/"
+         class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors border border-white/20">
+        <i class="fas fa-globe text-xs"></i>
+        Acessar o Blog
+      </a>
+      <a href="/admin/"
+         class="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors px-4 py-2.5 rounded-xl hover:bg-white/10 border border-transparent hover:border-white/20">
+        <i class="fas fa-lock text-xs"></i>
+        Admin Django
+      </a>
+    </div>
+  </div>
+</body>
+</html>

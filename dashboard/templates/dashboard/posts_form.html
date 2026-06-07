@@ -1,0 +1,567 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}{% if post %}Editar Post{% else %}Novo Post{% endif %}{% endblock %}
+{% block breadcrumb %}
+  <span class="crumb-sep"><i class="fas fa-chevron-right"></i></span>
+  <a href="{% url 'dashboard:posts_list' %}">Posts</a>
+  <span class="crumb-sep"><i class="fas fa-chevron-right"></i></span>
+{% endblock %}
+{% block page_heading %}{% if post %}Editar Post{% else %}Novo Post{% endif %}{% endblock %}
+
+{% block extra_head %}
+{{ form.media }}
+<style>
+  /* ── Post form: full-width editor layout ────────────────────── */
+  .post-form { display: flex; flex-direction: column; gap: 0; margin: -24px; min-height: calc(100vh - var(--dash-header-h)); }
+
+  /* Sticky meta bar */
+  .post-meta-bar {
+    position: sticky;
+    top: var(--dash-header-h);
+    z-index: 90;
+    background: var(--bg-card-optimized);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 12px var(--shadow-color);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .meta-field-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+  }
+  .meta-field-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .meta-select {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 13px;
+    background: var(--bg-section-2);
+    color: var(--text-primary);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s;
+    cursor: pointer;
+    min-width: 120px;
+  }
+  .meta-select:focus { border-color: var(--color-accent); }
+
+  .meta-divider { width: 1px; height: 24px; background: var(--border-color); flex-shrink: 0; }
+  .meta-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+  /* AI toolbar */
+  .ai-toolbar {
+    background: var(--bg-section-2);
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .ai-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: .05em;
+    margin-right: 4px;
+  }
+  .ai-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    border: none; cursor: pointer;
+    transition: filter .15s;
+  }
+  .ai-btn:hover { filter: brightness(1.1); }
+  .ai-status { font-size: 12px; color: var(--text-secondary); margin-left: 4px; }
+
+  /* Editor area */
+  .editor-area {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Title input — cleaner and proportional */
+  .title-input {
+    width: 100%;
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: inherit;
+    color: var(--text-heading);
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 16px 0 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+    transition: border-color .3s;
+  }
+  .title-input:focus { border-color: var(--color-accent); }
+  .title-input::placeholder { color: var(--text-secondary); opacity: .5; font-weight: 400; }
+
+  .slug-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-section-2);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 6px 12px;
+  }
+  .slug-icon { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+  .slug-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+    color: var(--text-primary);
+    outline: none;
+  }
+  .slug-input::placeholder { color: var(--text-secondary); opacity: .6; }
+
+  /* Content label */
+  .content-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* TinyMCE gets the full width — override any widget constraints */
+  .editor-area .mce-tinymce,
+  .editor-area .tox-tinymce {
+    width: 100% !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--border-color) !important;
+    overflow: hidden;
+  }
+
+  /* Bottom panels row */
+  .bottom-panels {
+    padding: 0 24px 24px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* Thumbnail panel */
+  .thumb-panel {
+    background: var(--bg-card-optimized);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 16px;
+    min-width: 240px;
+  }
+  .thumb-preview {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .thumb-placeholder {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: var(--bg-section-2);
+    border: 2px dashed var(--border-color);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+  .thumb-panel input[type=file] {
+    font-size: 12px;
+    color: var(--text-secondary);
+    width: 100%;
+  }
+
+  /* SEO panel */
+  .seo-panel {
+    background: var(--bg-card-optimized);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .seo-panel-header {
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-heading);
+  }
+  .seo-panel-header:hover { background: var(--bg-section-2); }
+  .seo-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .seo-body.hidden { display: none; }
+  .seo-field input, .seo-field textarea {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    padding: 8px 12px;
+    font-size: 13px;
+    background: var(--bg-section-1);
+    color: var(--text-primary);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s;
+    resize: none;
+  }
+  .seo-field input:focus, .seo-field textarea:focus { border-color: var(--color-accent); }
+  .seo-char-count { font-size: 11px; color: var(--text-secondary); text-align: right; margin-top: 3px; }
+
+  @media (max-width: 768px) {
+    .post-meta-bar { gap: 6px; }
+    .meta-field-group { flex-direction: column; align-items: flex-start; gap: 3px; }
+    .bottom-panels { grid-template-columns: 1fr; }
+    .title-input { font-size: 1.2rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="post-form" id="post-form">
+  {% csrf_token %}
+
+  <!-- ① STICKY META BAR — Status, Author, Category, Save ───────────── -->
+  <div class="post-meta-bar">
+    <!-- Status -->
+    <div class="meta-field-group">
+      <span class="meta-field-label">Status</span>
+      <select name="status" class="meta-select">
+        {% for value, label in form.status.field.choices %}
+          <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="meta-divider"></div>
+
+    <!-- Author -->
+    <div class="meta-field-group">
+      <span class="meta-field-label">Autor</span>
+      <select name="author" class="meta-select">
+        <option value="">---------</option>
+        {% for author in form.author.field.queryset %}
+          <option value="{{ author.pk }}" {% if form.author.value|stringformat:"s" == author.pk|stringformat:"s" %}selected{% endif %}>
+            {{ author.full_name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="meta-divider"></div>
+
+    <!-- Category -->
+    <div class="meta-field-group">
+      <span class="meta-field-label">Categoria *</span>
+      <select name="category" class="meta-select">
+        <option value="">---------</option>
+        {% for cat in form.category.field.queryset %}
+          <option value="{{ cat.pk }}" {% if form.category.value|stringformat:"s" == cat.pk|stringformat:"s" %}selected{% endif %}>
+            {{ cat }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Actions -->
+    <div class="meta-actions">
+      {% if post %}
+      <a href="{{ post.get_absolute_url }}" target="_blank" class="btn-secondary" style="padding:7px 14px;font-size:12px;">
+        <i class="fas fa-external-link-alt" style="font-size:10px;"></i> Ver post
+      </a>
+      {% endif %}
+      <button type="submit" class="btn-primary" style="padding:7px 18px;">
+        <i class="fas fa-save"></i> Salvar
+      </button>
+      <a href="{% url 'dashboard:posts_list' %}" class="btn-secondary" style="padding:7px 14px;">
+        Cancelar
+      </a>
+    </div>
+  </div>
+
+  <!-- ② AI TOOLBAR ──────────────────────────────────────────────────── -->
+  <div class="ai-toolbar">
+    <div class="ai-badge">
+      <i class="fas fa-robot" style="color:var(--color-accent);font-size:13px;"></i> IA Admin
+    </div>
+    <button type="button" id="btn-ai-format" class="ai-btn"
+            style="background:#059669;color:#fff;">
+      <i class="fas fa-magic"></i> Formatar
+    </button>
+    {% if post %}
+    <button type="button" id="btn-ai-translate" class="ai-btn"
+            style="background:var(--color-accent);color:#fff;">
+      <i class="fas fa-language"></i> Traduzir EN/ES/FR
+    </button>
+    <button type="button" id="btn-ai-seo" class="ai-btn"
+            style="background:#d97706;color:#fff;">
+      <i class="fas fa-magnifying-glass"></i> Gerar SEO
+    </button>
+    {% endif %}
+    <span id="ai-status" class="ai-status"></span>
+    <a href="{% url 'dashboard:ai_settings' %}" style="margin-left:auto;font-size:11px;color:var(--text-secondary);text-decoration:none;">
+      <i class="fas fa-gear"></i> Config IA
+    </a>
+  </div>
+
+  <!-- ③ EDITOR AREA — Full width ─────────────────────────────────── -->
+  <div class="editor-area">
+
+    <!-- Title -->
+    <div>
+      <input type="text" name="title" id="id_title"
+             value="{{ form.title.value|default:'' }}"
+             class="title-input"
+             placeholder="Título do artigo..."
+             autocomplete="off">
+      {% if form.title.errors %}
+        <p style="color:#dc2626;font-size:12px;margin-top:4px;">{{ form.title.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Slug -->
+    <div class="slug-row">
+      <i class="fas fa-link slug-icon"></i>
+      <input type="text" name="slug" id="id_slug"
+             value="{{ form.slug.value|default:'' }}"
+             class="slug-input"
+             placeholder="slug-gerado-automaticamente"
+             autocomplete="off">
+    </div>
+
+    <!-- Content -->
+    <div>
+      <p class="content-label"><i class="fas fa-file-alt" style="margin-right:5px;"></i>Conteúdo</p>
+      {{ form.content }}
+      {% if form.content.errors %}
+        <p style="color:#dc2626;font-size:12px;margin-top:4px;">{{ form.content.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- ④ BOTTOM: Thumbnail + SEO ──────────────────────────────────── -->
+  <div class="bottom-panels">
+
+    <!-- Thumbnail -->
+    <div class="thumb-panel">
+      <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin-bottom:10px;">
+        <i class="fas fa-image" style="margin-right:5px;"></i>Imagem de Destaque
+      </p>
+      {% if post and post.thumbnail %}
+        <img src="{{ post.thumbnail.url }}" alt="" class="thumb-preview">
+      {% else %}
+        <div class="thumb-placeholder">
+          <i class="fas fa-image" style="font-size:28px;opacity:.3;"></i>
+          <span>Nenhuma imagem</span>
+        </div>
+      {% endif %}
+      {{ form.thumbnail }}
+    </div>
+
+    <!-- SEO -->
+    <div class="seo-panel">
+      <div class="seo-panel-header" onclick="toggleSEO()">
+        <span><i class="fas fa-magnifying-glass" style="margin-right:8px;color:var(--color-accent);"></i>SEO &amp; Palavras-chave</span>
+        <i class="fas fa-chevron-down" id="seo-caret" style="font-size:11px;color:var(--text-secondary);transition:transform .2s;"></i>
+      </div>
+      <div class="seo-body" id="seo-body">
+        <div class="seo-field">
+          <label class="field-label">Meta Title <small style="font-weight:400;color:var(--text-secondary);">(máx. 60 chars)</small></label>
+          <input type="text" name="meta_title" id="id_meta_title"
+                 value="{{ form.meta_title.value|default:'' }}"
+                 maxlength="60" placeholder="Título para buscadores..."
+                 oninput="updateCharCount('id_meta_title','cnt_meta_title',60)">
+          <div class="seo-char-count"><span id="cnt_meta_title">{{ form.meta_title.value|default:''|length }}</span>/60</div>
+        </div>
+        <div class="seo-field">
+          <label class="field-label">Meta Description <small style="font-weight:400;color:var(--text-secondary);">(máx. 160 chars)</small></label>
+          <textarea name="meta_description" id="id_meta_description" rows="3"
+                    maxlength="160" placeholder="Resumo atrativo para o Google..."
+                    oninput="updateCharCount('id_meta_description','cnt_meta_desc',160)">{{ form.meta_description.value|default:'' }}</textarea>
+          <div class="seo-char-count"><span id="cnt_meta_desc">{{ form.meta_description.value|default:''|length }}</span>/160</div>
+        </div>
+        <div class="seo-field">
+          <label class="field-label">Palavras-chave <small style="font-weight:400;color:var(--text-secondary);">(separadas por vírgula)</small></label>
+          <input type="text" name="keywords" id="id_keywords"
+                 value="{{ form.keywords.value|default:'' }}"
+                 placeholder="tecnologia, ia, blog...">
+        </div>
+        {% if post %}
+        <div style="display:flex;align-items:center;gap:6px;padding-top:4px;border-top:1px solid var(--border-color);">
+          <span style="font-size:11px;color:var(--text-secondary);">Criado: {{ post.created_at|date:"d/m/Y H:i" }}</span>
+          <span style="color:var(--border-color);">·</span>
+          <span style="font-size:11px;color:var(--text-secondary);">Atualizado: {{ post.updated_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- form errors summary -->
+  {% if form.non_field_errors %}
+  <div style="padding:0 24px 16px;">
+    <div class="dash-alert alert-error">
+      <i class="fas fa-circle-exclamation"></i>
+      {{ form.non_field_errors.0 }}
+    </div>
+  </div>
+  {% endif %}
+
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ── Auto-slug ────────────────────────────────────────────────────
+const titleInput = document.getElementById('id_title');
+const slugInput  = document.getElementById('id_slug');
+let slugEdited = {% if post and post.slug %}true{% else %}false{% endif %};
+
+function slugify(s) {
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '').trim()
+    .replace(/\s+/g, '-').replace(/-+/g, '-');
+}
+if (titleInput && slugInput) {
+  titleInput.addEventListener('input', () => { if (!slugEdited) slugInput.value = slugify(titleInput.value); });
+  slugInput.addEventListener('input',  () => { slugEdited = true; });
+}
+
+// ── SEO panel toggle ─────────────────────────────────────────────
+function toggleSEO() {
+  const body  = document.getElementById('seo-body');
+  const caret = document.getElementById('seo-caret');
+  const open  = !body.classList.contains('hidden');
+  body.classList.toggle('hidden', open);
+  caret.style.transform = open ? 'rotate(-90deg)' : 'rotate(0)';
+}
+
+// ── Char count helpers ───────────────────────────────────────────
+function updateCharCount(inputId, countId, max) {
+  const el = document.getElementById(inputId);
+  const cnt = document.getElementById(countId);
+  if (el && cnt) {
+    cnt.textContent = el.value.length;
+    cnt.style.color = el.value.length > max * .9 ? '#dc2626' : 'var(--text-secondary)';
+  }
+}
+
+// ── TinyMCE helpers ──────────────────────────────────────────────
+function getCsrf() {
+  return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+function getTinyContent() {
+  if (typeof tinymce !== 'undefined' && tinymce.editors.length)
+    return tinymce.editors[0].getContent();
+  const ta = document.querySelector('textarea[name="content"]');
+  return ta ? ta.value : '';
+}
+function setTinyContent(html) {
+  if (typeof tinymce !== 'undefined' && tinymce.editors.length) {
+    tinymce.editors[0].setContent(html); return;
+  }
+  const ta = document.querySelector('textarea[name="content"]');
+  if (ta) ta.value = html;
+}
+function setStatus(msg, color) {
+  const el = document.getElementById('ai-status');
+  if (el) { el.textContent = msg; el.style.color = color || 'var(--text-secondary)'; }
+}
+function aiPost(url, params, onSuccess, btn) {
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+  setStatus('Aguarde...', 'var(--text-secondary)');
+  fetch(url, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(params),
+  })
+  .then(r => r.json())
+  .then(d => onSuccess(d))
+  .catch(e => setStatus('✗ ' + e.message, '#dc2626'))
+  .finally(() => { btn.disabled = false; btn.innerHTML = orig; });
+}
+
+// Format
+const btnFmt = document.getElementById('btn-ai-format');
+if (btnFmt) btnFmt.addEventListener('click', function() {
+  const c = getTinyContent();
+  if (!c.trim()) { setStatus('Conteúdo vazio.', '#dc2626'); return; }
+  aiPost('{% url "dashboard:ai_format" %}',
+    { content: c, title: titleInput?.value || '' },
+    d => {
+      if (d.status === 'success') { setTinyContent(d.html); setStatus('✓ Tema: ' + d.theme, '#059669'); }
+      else setStatus('✗ ' + (d.error || 'Erro'), '#dc2626');
+    }, this);
+});
+
+{% if post %}
+// Translate
+const btnTrans = document.getElementById('btn-ai-translate');
+if (btnTrans) btnTrans.addEventListener('click', function() {
+  if (!confirm('Traduzir para EN, ES e FR em segundo plano (1-3 min)?')) return;
+  aiPost('{% url "dashboard:ai_translate" post_id=post.pk %}',
+    { post_id: '{{ post.pk }}' },
+    d => {
+      if (d.status === 'started') setStatus('⟳ ' + (d.message || 'Tradução em andamento...'), '#3b82f6');
+      else setStatus('✗ ' + (d.error || 'Erro'), '#dc2626');
+    }, this);
+});
+
+// SEO
+const btnSEO = document.getElementById('btn-ai-seo');
+if (btnSEO) btnSEO.addEventListener('click', function() {
+  const title = titleInput?.value || '';
+  const content = getTinyContent();
+  if (!title && !content) { setStatus('Preencha título ou conteúdo.', '#dc2626'); return; }
+  aiPost('{% url "dashboard:ai_seo" post_id=post.pk %}',
+    { title, content },
+    d => {
+      if (d.status === 'success') {
+        if (d.meta_title)       { const f = document.getElementById('id_meta_title');       if (f) { f.value = d.meta_title;       updateCharCount('id_meta_title','cnt_meta_title',60); } }
+        if (d.meta_description) { const f = document.getElementById('id_meta_description'); if (f) { f.value = d.meta_description; updateCharCount('id_meta_description','cnt_meta_desc',160); } }
+        if (d.keywords)         { const f = document.getElementById('id_keywords');         if (f) f.value = d.keywords; }
+        // Open SEO panel
+        const body = document.getElementById('seo-body');
+        if (body && body.classList.contains('hidden')) toggleSEO();
+        setStatus('✓ SEO gerado!', '#059669');
+      } else setStatus('✗ ' + (d.error || 'Erro'), '#dc2626');
+    }, this);
+});
+{% endif %}
+</script>
+{% endblock %}

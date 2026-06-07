@@ -1,0 +1,10 @@
+server {
+    # ... outras configurações
+    root /caminho/completo/para/modern_blog;
+
+    location = /ads.txt {
+        alias /caminho/completo/para/modern_blog/root_files/ads.txt;
+    }
+
+    # ...
+}

@@ -1,0 +1,844 @@
+{% extends "blog/base.html" %}
+{% load static i18n %}
+{% load blog_extras %}
+
+{% block page_title %}{{ post.meta_title|default:post.title }} | {{ site_settings.site_name }}{% endblock %}
+
+{# ✅ CORREÇÃO 1: Adicionado |safe para garantir que a descrição apareça corretamente ao compartilhar o link #}
+{% block meta_description %}{{ post.meta_description|default:post.content|striptags|truncatewords:25|safe }}{% endblock %}
+
+{% block extra_head %}
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+
+    <meta property="og:title" content="{{ post.meta_title|default:post.title }}">
+    <meta property="og:description" content="{{ post.meta_description|default:post.content|striptags|truncatewords:25|safe }}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:site_name" content="{{ site_settings.site_name }}">
+    <meta property="og:type" content="article">
+    {% if post.thumbnail %}
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ post.thumbnail.url }}">
+    <meta property="og:image:alt" content="{{ post.title }}">
+    {% endif %}
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ post.meta_title|default:post.title }}">
+    <meta name="twitter:description" content="{{ post.meta_description|default:post.content|striptags|truncatewords:25|safe }}">
+    {% if post.thumbnail %}
+    <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ post.thumbnail.url }}">
+    <meta name="twitter:image:alt" content="{{ post.title }}">
+    {% endif %}
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "{{ request.build_absolute_uri }}"
+      },
+      "headline": "{{ post.title }}",
+      "description": "{{ post.meta_description|default:post.content|striptags|truncatewords:25|safe }}",
+      {% if post.thumbnail %}
+      "image": "{{ request.scheme }}://{{ request.get_host }}{{ post.thumbnail.url }}",
+      {% endif %}
+      "author": {
+        "@type": "Person",
+        "name": "{{ post.author.full_name }}",
+        "url": "{{ request.scheme }}://{{ request.get_host }}{{ post.author.get_absolute_url }}"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "{{ site_settings.site_name }}",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "{{ request.scheme }}://{{ request.get_host }}{% static 'assets/img/favicon.png' %}"
+        }
+      },
+      "datePublished": "{{ post.created_at|date:'c' }}",
+      "dateModified": "{{ post.updated_at|date:'c' }}"
+    }
+    </script>
+{% endblock extra_head %}
+{% block content %}
+    <div class="post-hero-section">
+        <canvas id="hero-canvas"></canvas>
+        
+        <div class="hero-content-wrapper">
+            <div class="container mx-auto px-4 lg:py-20" style="padding-top: 0rem; padding-bottom: 3rem">
+                <div class="max-w-4xl mx-auto">
+                    
+                    <nav class="breadcrumb-nav fade-in-element" aria-label="Breadcrumb">
+                        <div class="flex items-center gap-2 text-sm">
+                            <a href="{% url 'blog:home' %}" class="breadcrumb-link">Home</a>
+                            <i class="fas fa-chevron-right text-xs opacity-60"></i>
+                            {% if post.category %}
+                            <a href="{{ post.category.get_absolute_url }}" class="breadcrumb-link">{{ post.category.name }}</a>
+                            <i class="fas fa-chevron-right text-xs opacity-60"></i>
+                            {% endif %}
+                            <span class="breadcrumb-current">{{ post.title|truncatewords:5 }}</span>
+                        </div>
+                    </nav>
+
+                    {% if post.category %}
+                    <div class="category-badge-wrapper fade-in-element delay-100">
+                        <a href="{{ post.category.get_absolute_url }}" class="category-badge-modern" 
+                           style="--category-color: {{ post.category.color|default:'#64748b' }};">
+                            <div class="category-icon">
+                                <i class="fas fa-tag"></i>
+                            </div>
+                            <span class="category-text">{{ post.category.name }}</span>
+                            <div class="category-glow"></div>
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <header class="post-header fade-in-element delay-200">
+                        <h1 class="post-title-modern">{{ post.title }}</h1>
+                    </header>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if post.thumbnail %}
+    <div class="featured-image-section">
+        <div class="container mx-auto px-4">
+            <div class="max-w-6xl mx-auto fade-in-element delay-400">
+                <div class="elegant-image-frame">
+                    <div class="featured-image-wrapper">
+                        <img src="{{ post.thumbnail.url }}" 
+                             alt="{{ post.title }}" 
+                             class="featured-image">
+                        <div class="image-overlay">
+                            <button class="image-zoom-btn" data-action="zoom" aria-label="Expandir imagem">
+                                <i class="fas fa-expand-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <main class="article-main-section">
+        <div class="container mx-auto px-4 py-16">
+            <div class="max-w-4xl mx-auto">
+                
+                <div class="article-content-frame">
+                    <article class="article-content-inner">
+                        <div class="post-content-enhanced">
+                            {{ post.content|safe }}
+                        </div>
+                        
+                        <footer class="article-footer">
+                            <div class="article-tags">
+                                <h4 class="tags-title">Tags relacionadas:</h4>
+                                <div class="tags-list">
+                                    {% if post.category %}
+                                    <span class="article-tag">{{ post.category.name }}</span>
+                                    {% endif %}
+                                    <span class="article-tag">Blog</span>
+                                    <span class="article-tag">Artigo</span>
+                                </div>
+                            </div>
+
+                            <div class="article-share-section">
+                                <h4 class="share-title">Gostou do conteúdo? Compartilhe:</h4>
+                                <div class="share-buttons-list">
+                                    <button class="share-btn-modern instagram" id="instagram-share-btn" aria-label="Compartilhar no Instagram">
+                                        <i class="fab fa-instagram"></i>
+                                        <span>Compartilhar no Instagram</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="author-bio-extended">
+                                <div class="author-bio-card">
+                                    <div class="author-bio-avatar">
+                                        {% if post.author.profile_picture %}
+                                        <img src="{{ post.author.profile_picture.url }}" alt="{{ post.author.full_name }}">
+                                        {% else %}
+                                        <div class="bio-avatar-placeholder">{{ post.author.first_name|first }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="author-bio-content">
+                                        <a href="{% url 'blog:author_detail' post.author.slug post.author.id %}" class="text-decoration-none">
+                                            <h4 class="bio-author-name">Sobre {{ post.author.full_name }}</h4>
+                                        </a>
+
+                                        <div class="post-meta-grid">
+                                            <div class="meta-item">
+                                                <i class="far fa-calendar-alt meta-icon"></i>
+                                                <time datetime="{{ post.created_at|date:'Y-m-d' }}">{{ post.created_at|date:"d M, Y" }}</time>
+                                            </div>
+                                            <div class="meta-item">
+                                                <i class="far fa-clock meta-icon"></i>
+                                                <span>{{ post.content|reading_time }}</span>
+                                            </div>
+                                            {% if post.category %}
+                                            <div class="meta-item">
+                                                <i class="fas fa-tag meta-icon"></i>
+                                                <span>{{ post.category.name }}</span>
+                                            </div>
+                                            {% endif %}
+                                            </div>
+
+                                        <div class="truncated-text-wrapper">
+                                            <p class="bio-description bio-description-truncated">
+                                                {% if post.author.bio %}
+                                                {# ✅ CORREÇÃO 2: Adicionado |safe para permitir formatação HTML na biografia do autor #}
+                                                {{ post.author.bio|safe }}
+                                                {% else %}
+                                                Escritor e criador de conteúdo apaixonado por compartilhar conhecimento e inspirar outras pessoas através de suas palavras.
+                                                {% endif %}
+                                            </p>
+                                            <a href="{% url 'blog:author_detail' post.author.slug post.author.id %}" class="read-more-link">Ler mais...</a>
+                                        </div>
+                                        
+                                        <div class="author-social-links">
+                                            {% if post.author.linkedin_url %}<a href="{{ post.author.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="author-social-link linkedin" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>{% endif %}
+                                            {% if post.author.instagram_url %}<a href="{{ post.author.instagram_url }}" target="_blank" rel="noopener noreferrer" class="author-social-link instagram" title="Instagram"><i class="fab fa-instagram"></i></a>{% endif %}
+                                            {% if post.author.whatsapp_number %}<a href="https://wa.me/{{ post.author.whatsapp_number }}" target="_blank" rel="noopener noreferrer" class="author-social-link whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </footer>
+                    </article>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    {% if related_posts %}
+    <section class="related-posts-section-fullwidth">
+        <div class="container mx-auto px-4 py-8">
+            <div class="section-header fade-in-element">
+                <div class="section-badge">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Mais conteúdo</span>
+                </div>
+                <h3 class="section-title">Artigos relacionados</h3>
+                <p class="section-subtitle">Continue sua jornada de conhecimento com estes artigos selecionados</p>
+            </div>
+        </div>
+        <div class="carousel-fullwidth-wrapper">
+            <div class="carousel-fullwidth-container" id="related-posts-carousel">
+                <div class="carousel-fullwidth-track">
+                    {% for related_post in related_posts %}
+                    <div class="related-post-card-fullwidth carousel-slide fade-in-element delay-{{ forloop.counter }}00">
+                        <a href="{{ related_post.get_absolute_url }}" class="card-link-fullwidth">
+                            {% if related_post.thumbnail %}
+                            <div class="card-image-wrapper-fullwidth">
+                                <img src="{{ related_post.thumbnail.url }}" alt="{{ related_post.title }}" class="card-image-fullwidth">
+                                <div class="card-image-overlay-fullwidth"><i class="fas fa-arrow-right"></i></div>
+                            </div>
+                            {% endif %}
+                            <div class="card-content-fullwidth">
+                                {% if related_post.category %}<span class="card-category-fullwidth" style="color: {{ related_post.category.color|default:'#64748b' }};">{{ related_post.category.name }}</span>{% endif %}
+                                <h4 class="card-title-fullwidth">{{ related_post.title }}</h4>
+                                
+                                {# ✅ CORREÇÃO 3: Adicionado |safe para corrigir o texto nos cards de artigos relacionados #}
+                                <p class="card-excerpt-fullwidth">{{ related_post.content|striptags|truncatewords:15|safe }}</p>
+
+                                <div class="card-read-more"><span class="read-more-btn-fullwidth">Ler mais <i class="fas fa-arrow-right"></i></span></div>
+                                <div class="card-meta-fullwidth">
+                                    <span class="card-author-fullwidth">{{ related_post.author.first_name }}</span>
+                                    <span class="card-separator-fullwidth">•</span>
+                                    <time class="card-date-fullwidth">{{ related_post.created_at|date:"d M" }}</time>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="carousel-controls-fullwidth">
+                <button class="carousel-btn-fullwidth prev-btn-fullwidth" id="prev-btn-fullwidth" aria-label="Artigo anterior"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn-fullwidth next-btn-fullwidth" id="next-btn-fullwidth" aria-label="Próximo artigo"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="container mx-auto px-4"><div class="carousel-indicators-fullwidth" id="carousel-indicators-fullwidth"></div></div>
+    </section>
+    {% endif %}
+
+    <div id="image-lightbox" class="lightbox-overlay">
+        <span class="lightbox-close-btn" aria-label="Fechar imagem">&times;</span>
+        <img class="lightbox-image-content" id="lightbox-img" alt="Imagem em destaque ampliada">
+    </div>
+
+    <style>
+    /* ========== ESTILOS GERAIS DA PÁGINA ========== */
+    .post-hero-section { position: relative; background: var(--bg-section-1); min-height: 25vh; display: flex; align-items: center; overflow: hidden; }
+    #hero-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    .hero-content-wrapper { position: relative; z-index: 2; width: 100%; }
+    .breadcrumb-nav { margin-top: 2rem; margin-bottom: 2rem; }
+    .breadcrumb-link { color: var(--text-secondary); text-decoration: none; transition: color .2s ease; }
+    .breadcrumb-link:hover { color: var(--color-accent); }
+    .breadcrumb-current { color: var(--text-primary); font-weight: 500; }
+    .category-badge-wrapper { margin-bottom: 2rem; }
+    .category-badge-modern { display: inline-flex; align-items: center; gap: .75rem; padding: .75rem 1.5rem; background: var(--bg-card); border: 2px solid; border-color: var(--category-color); border-radius: 50px; text-decoration: none; position: relative; overflow: hidden; transition: all .3s ease; backdrop-filter: blur(10px); }
+    .category-badge-modern:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,.15); }
+    .category-icon { width: 24px; height: 24px; background: var(--category-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: .75rem; }
+    .category-text { font-weight: 600; color: var(--category-color); font-size: .9rem; }
+    .category-glow { position: absolute; top: 0; left: -100%; right: 0; bottom: 0; background: linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent); transition: left .5s ease; }
+    .category-badge-modern:hover .category-glow { left: 100%; }
+    .post-header { margin-bottom: 3rem; }
+    .post-title-modern { font-size: clamp(2rem,5vw,3.5rem); font-weight: 900; color: var(--text-heading); line-height: 1.1; margin-bottom: 1.5rem; background: linear-gradient(135deg,var(--text-heading) 0,var(--color-accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    
+    /* ========== MOLDURA DA IMAGEM ========== */
+    .featured-image-section { margin-top: -3rem; margin-bottom: -1rem; position: relative; z-index: 10; }
+    .elegant-image-frame { background-color: var(--bg-card); border-radius: .75rem; box-shadow: 0 20px 60px -10px var(--shadow-color); }
+    .featured-image-wrapper { position: relative; border-radius: .5rem; overflow: hidden; }
+    .featured-image { width: 100%; height: auto; max-height: 500px; object-fit: cover; transition: transform .3s ease; display: block; }
+    .image-overlay { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .3s ease; }
+    .featured-image-wrapper:hover .image-overlay { opacity: 1; }
+    .featured-image-wrapper:hover .featured-image { transform: scale(1.05); }
+    .image-zoom-btn { width: 60px; height: 60px; background: hsla(0,0%,100%,.2); border: 1px solid hsla(0,0%,100%,.3); border-radius: 50%; color: #fff; cursor: pointer; transition: all .2s ease; backdrop-filter: blur(5px); font-size: 1.2rem; }
+    .image-zoom-btn:hover { background: hsla(0,0%,100%,.3); transform: scale(1.1); }
+    
+    /* ========== CONTEÚDO DO ARTIGO (CORRIGIDO) ========== */
+    .article-main-section { position: relative; }
+    .article-content-frame { background: var(--bg-card); border-radius: .5rem; border: 1px solid var(--border-color); backdrop-filter: blur(10px); box-shadow: 0 8px 32px var(--shadow-color); position: relative; overflow: hidden; }
+    .article-content-inner { padding: 3rem; }
+    .post-content-enhanced { display: block !important; font-size: 1.125rem; line-height: 1.8; color: var(--text-primary); }
+    
+    /* =============================================================== */
+    /* ===== MELHORIA: ESTILOS PARA O CONTEÚDO VINDO DO EDITOR  ====== */
+    /* =============================================================== */
+    .post-content-enhanced h2 { font-size: 1.75rem; font-weight: 700; color: var(--text-heading); margin-top: 2.5rem; margin-bottom: 1.5rem; line-height: 1.3; border-bottom: 2px solid var(--color-accent); padding-bottom: 0.5rem; }
+    .post-content-enhanced h3 { font-size: 1.4rem; font-weight: 600; color: var(--text-heading); margin-top: 2rem; margin-bottom: 1rem; line-height: 1.4; }
+    .post-content-enhanced p { margin-bottom: 1.5rem; }
+    .post-content-enhanced a { color: var(--color-accent); text-decoration: underline; transition: color 0.2s ease; }
+    .post-content-enhanced a:hover { color: var(--text-heading); }
+    .post-content-enhanced strong { font-weight: 600; color: var(--text-heading); }
+    .post-content-enhanced em { font-style: italic; }
+    .post-content-enhanced ul, .post-content-enhanced ol { margin-left: 1.5rem; margin-bottom: 1.5rem; }
+    .post-content-enhanced ul li { list-style-type: disc; margin-bottom: 0.5rem; }
+    .post-content-enhanced ol li { list-style-type: decimal; margin-bottom: 0.5rem; }
+    .post-content-enhanced blockquote { border-left: 4px solid var(--color-accent); padding-left: 1.5rem; margin: 2rem 0; font-style: italic; color: var(--text-secondary); }
+    .post-content-enhanced img { max-width: 100%; height: auto; border-radius: 8px; margin: 2rem 0; box-shadow: 0 8px 24px var(--shadow-color); }
+    /* =============================================================== */
+    
+    .article-footer { margin-top: 4rem; padding-top: 3rem; border-top: 2px solid var(--border-color); }
+    .article-tags { margin-bottom: 3rem; }
+    .tags-title { color: var(--text-heading); margin-bottom: 1rem; font-weight: 600; }
+    .tags-list { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .article-tag { padding: .5rem 1rem; background: var(--bg-section-2); border: 1px solid var(--border-color); border-radius: 50px; color: var(--text-secondary); font-size: .85rem; transition: all .2s ease; }
+    .article-tag:hover { background: var(--color-accent); color: #fff; transform: translateY(-2px); }
+    
+    /* ========== CARD DE AUTOR ========== */
+    .author-bio-extended { margin-bottom: 2rem; }
+    .author-bio-card { display: flex; gap: 2rem; padding: 2.5rem; background: var(--bg-section-2); border-radius: .5rem; border: 1px solid var(--border-color); }
+    .author-bio-avatar { width: 80px; height: 80px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+    .author-bio-avatar img, .bio-avatar-placeholder { width: 100%; height: 100%; object-fit: cover; }
+    .bio-avatar-placeholder { background: var(--color-accent); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 2rem; }
+    .author-bio-content { flex: 1; display: flex; flex-direction: column; }
+    .bio-author-name { color: var(--text-heading); margin-bottom: 1rem; }
+    .post-meta-grid { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 1rem; }
+    .meta-item { display: flex; align-items: center; gap: .5rem; color: var(--text-secondary); font-size: .9rem; }
+    .meta-icon { color: var(--color-accent); }
+    .truncated-text-wrapper { position: relative; margin-bottom: 1.5rem; }
+    .bio-description { color: var(--text-secondary); line-height: 1.6; margin-bottom: 0.5rem; }
+    .bio-description-truncated { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .read-more-link { font-weight: 600; color: var(--color-accent); text-decoration: none; transition: all 0.2s ease; display: inline-block; margin-top: 0.5rem; }
+    .read-more-link:hover { text-decoration: underline; }
+    .author-social-links { display: flex; gap: .75rem; margin-top: auto; }
+    .author-social-link { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all .2s ease; }
+    .author-social-link.linkedin { background: #0077b5; color: #fff; }
+    .author-social-link.instagram { background: radial-gradient(circle at 30% 107%,#fdf497 0,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285aeb 90%); color: #fff; }
+    .author-social-link.whatsapp { background: #25d366; color: #fff; }
+    .author-social-link:hover { transform: translateY(-2px); }
+    
+    /* ========== POSTS RELACIONADOS ========== */
+    .related-posts-section-fullwidth { background: var(--bg-section-2); padding: 4rem 0; position: relative; overflow: hidden; }
+    .section-header { text-align: center; margin-bottom: 3rem; }
+    .section-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.5rem; background: var(--color-accent); color: white; border-radius: 50px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1.5rem; }
+    .section-title { font-size: 2.5rem; font-weight: 800; color: var(--text-heading); margin-bottom: 1rem; }
+    .section-subtitle { color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+    .carousel-fullwidth-wrapper { position: relative; }
+    .carousel-fullwidth-container { overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 2rem 0; scroll-padding: 0 2rem; }
+    .carousel-fullwidth-container::-webkit-scrollbar { display: none; }
+    .carousel-fullwidth-track { display: flex; justify-content: center; width: max-content; min-width: 100%; margin: 0; padding: 0 2rem; gap: 2rem; }
+    .carousel-slide { flex: 0 0 auto; scroll-snap-align: center; width: 90%; max-width: 380px; }
+    .related-post-card-fullwidth { margin: 0; }
+    .card-link-fullwidth { display: block; background: var(--bg-card); border-radius: 0.5rem; overflow: hidden; transition: all 0.3s ease; text-decoration: none; border: 1px solid var(--border-color); box-shadow: 0 8px 32px var(--shadow-color); height: 100%; }
+    .card-link-fullwidth:hover { transform: translateY(-8px); box-shadow: 0 20px 40px var(--shadow-color); }
+    .card-image-wrapper-fullwidth { position: relative; height: 220px; overflow: hidden; }
+    .card-image-fullwidth { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+    .card-image-overlay-fullwidth { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: rgba(0,0,0,0.7); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; opacity: 0; transition: opacity 0.3s ease; }
+    .related-post-card-fullwidth:hover .card-image-fullwidth { transform: scale(1.1); }
+    .related-post-card-fullwidth:hover .card-image-overlay-fullwidth { opacity: 1; }
+    .card-content-fullwidth { padding: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+    .card-category-fullwidth { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; display: block; }
+    .card-title-fullwidth { font-size: 1.3rem; font-weight: 700; color: var(--text-heading); margin-bottom: 1rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-excerpt-fullwidth { color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex-grow: 1; }
+    .card-read-more { margin: 1rem 0; }
+    .read-more-btn-fullwidth { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--color-accent); text-decoration: none; transition: all 0.2s ease; cursor: pointer; }
+    .read-more-btn-fullwidth:hover { color: var(--color-accent); text-decoration: underline; }
+    .read-more-btn-fullwidth i { font-size: 0.8rem; transition: transform 0.2s ease; }
+    .read-more-btn-fullwidth:hover i { transform: translateX(3px); }
+    .card-meta-fullwidth { display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.85rem; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+    .card-separator-fullwidth { opacity: 0.6; }
+    .carousel-controls-fullwidth { position: absolute; top: 50%; transform: translateY(-50%); width: 100%; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; padding: 0 1rem; }
+    .carousel-btn-fullwidth { width: 50px; height: 50px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: all 0.3s ease; backdrop-filter: blur(10px); box-shadow: 0 8px 32px var(--shadow-color); pointer-events: all; opacity: 0.9; }
+    .carousel-btn-fullwidth:hover { background: var(--color-accent); color: white; transform: scale(1.1); box-shadow: 0 12px 40px var(--shadow-color); opacity: 1; }
+    .carousel-btn-fullwidth:disabled { opacity: 0.3; cursor: not-allowed; transform: scale(1); }
+    .carousel-btn-fullwidth:disabled:hover { background: var(--bg-card); color: var(--text-primary); }
+    .carousel-indicators-fullwidth { display: flex; justify-content: center; gap: 0.5rem; margin-top: 3rem; }
+    .carousel-indicator-fullwidth { width: 12px; height: 12px; border-radius: 50%; background: var(--border-color); cursor: pointer; transition: all 0.3s ease; border: none; }
+    .carousel-indicator-fullwidth.active { background: var(--color-accent); transform: scale(1.2); }
+    .carousel-indicator-fullwidth:hover { background: var(--color-accent); transform: scale(1.1); }
+    
+    /* ========== LIGHTBOX ========== */
+    .lightbox-overlay { position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,.9); display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity .3s ease; }
+    .lightbox-overlay.active { display: flex; opacity: 1; }
+    .lightbox-image-content { max-width: 90%; max-height: 85%; object-fit: contain; animation: zoomIn .3s ease; }
+    .lightbox-close-btn { position: absolute; top: 20px; right: 35px; color: #fff; font-size: 40px; font-weight: 700; transition: .3s; cursor: pointer; }
+    .lightbox-close-btn:hover { color: #bbb; }
+    @keyframes zoomIn { from {transform: scale(.8);} to {transform: scale(1);} }
+
+    /* ========== INSTAGRAM SHARE ========== */
+    .article-share-section { margin-top: 2rem; margin-bottom: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color); }
+    .share-title { color: var(--text-heading); margin-bottom: 1rem; font-weight: 600; font-size: 1rem; }
+    .share-buttons-list { display: flex; gap: 1rem; }
+    
+    .share-btn-modern { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem; border-radius: 50px; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: 1px solid var(--color-accent); background: transparent; color: var(--color-accent); transition: all 0.2s ease; }
+    .share-btn-modern:hover { background: var(--color-accent); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 15px var(--shadow-color); }
+    .share-btn-modern i { font-size: 1.1rem; }
+    
+    .share-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 1200; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
+    .share-modal-overlay.active { display: flex; opacity: 1; }
+    .share-modal-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 20px 40px var(--shadow-color); position: relative; overflow: hidden; animation: shareModalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; flex-direction: column; max-height: 90vh; }
+    @keyframes shareModalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .share-modal-close-btn { position: absolute; top: 1rem; right: 1.25rem; background: none; border: none; color: var(--text-secondary); font-size: 1.75rem; cursor: pointer; transition: color 0.2s ease; z-index: 10; }
+    .share-modal-close-btn:hover { color: var(--color-accent); }
+    .share-modal-header { padding: 1.5rem 1.5rem 1rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 1rem; }
+    .instagram-icon-wrapper { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-section-2); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; color: var(--color-accent); font-size: 1.1rem; }
+    .share-modal-header h3 { font-size: 1.2rem; font-weight: 700; color: var(--text-heading); margin: 0; }
+    .share-modal-body { padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem; }
+    .share-preview-box { display: flex; gap: 1rem; background: var(--bg-section-1); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); }
+    .share-preview-img-wrapper { width: 80px; height: 80px; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+    .share-preview-img { width: 100%; height: 100%; object-fit: cover; }
+    .share-preview-info { display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; }
+    .share-preview-title { font-size: 0.95rem; font-weight: 600; color: var(--text-heading); margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .share-preview-excerpt { font-size: 0.8rem; color: var(--text-secondary); margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .share-field-wrapper { display: flex; flex-direction: column; gap: 0.5rem; }
+    .share-field-label { font-size: 0.85rem; font-weight: 600; color: var(--text-heading); }
+    .share-textarea-container { position: relative; display: flex; flex-direction: column; }
+    .share-textarea { width: 100%; background: var(--bg-section-2); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; font-size: 0.875rem; color: var(--text-primary); resize: none; font-family: inherit; line-height: 1.5; }
+    .share-textarea:focus { outline: none; border-color: var(--color-accent); }
+    .share-copy-btn { margin-top: 0.5rem; align-self: flex-end; background: var(--bg-card); border: 1px solid var(--color-accent); border-radius: 50px; padding: 0.4rem 1rem; font-size: 0.8rem; font-weight: 600; color: var(--color-accent); cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s ease; }
+    .share-copy-btn:hover { background: var(--color-accent); color: #fff; }
+    .share-copy-btn.copied { background: #10b981; color: #fff; border-color: #10b981; }
+    .share-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .share-action-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; text-decoration: none; text-align: center; cursor: pointer; transition: all 0.2s ease; border: 1px solid var(--border-color); background: var(--bg-section-2); color: var(--text-heading); }
+    .download-img-btn:hover, .open-insta-btn:hover { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+    .mobile-native-share-btn { background: var(--color-accent); color: #fff; width: 100%; border-color: var(--color-accent); }
+    .mobile-native-share-btn:hover { opacity: 0.9; }
+    .share-divider { border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0 1rem 0; }
+    .share-instructions { background: var(--bg-section-1); border-left: 3px solid var(--color-accent); padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; }
+    .share-instructions h5 { font-size: 0.85rem; font-weight: 700; color: var(--text-heading); margin: 0 0 0.5rem 0; }
+    .share-instructions ol { font-size: 0.8rem; color: var(--text-secondary); margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
+    
+    /* ========== MEDIA QUERIES (CORRIGIDO) ========== */
+    @media (max-width: 1024px) { .section-title { font-size: 2rem; } .related-posts-section-fullwidth { padding: 3rem 0; } .article-content-inner { padding: 2rem; } .author-bio-card { padding: 2rem; } }
+    @media (max-width: 768px) { .post-hero-section { min-height: auto; padding-top: 1rem; padding-bottom: 2rem; } .hero-content-wrapper .container { padding: 0 1rem; } .featured-image-section { margin-top: -3rem; } .featured-image-section .container { padding: 0 1rem; } .elegant-image-frame { padding: 0.5rem; } .author-bio-card { flex-direction: column; text-align: center; align-items: center; padding: 1.5rem; } .author-bio-avatar { width: 60px; height: 60px; } .article-content-inner { padding: 1.5rem; } .article-main-section .container { padding: 0 1rem; } .article-main-section { padding: 2rem 0; } .post-meta-grid { gap: 1rem; } .meta-item { font-size: 0.8rem; } .carousel-slide { width: calc(100% - 2rem); } .carousel-controls-fullwidth { display: none; } .section-title { font-size: 1.8rem; } .section-subtitle { font-size: 1rem; } .card-content-fullwidth { padding: 1.5rem; } .card-image-wrapper-fullwidth { height: 180px; } .card-title-fullwidth { font-size: 1.1rem; } .related-posts-section-fullwidth { padding: 2rem 0; } .related-posts-section-fullwidth .container { padding: 0 1rem; } .category-badge-modern { padding: 0.5rem 1rem; gap: 0.5rem; } .category-icon { width: 20px; height: 20px; font-size: 0.7rem; } .category-text { font-size: 0.8rem; } .article-footer { margin-top: 2rem; padding-top: 2rem; } .article-tags { margin-bottom: 2rem; } }
+    @media (max-width: 480px) { .hero-content-wrapper .container { padding: 0 0.5rem; } .featured-image-section .container { padding: 0 0.5rem; } .article-main-section .container { padding: 0 0.5rem; } .related-posts-section-fullwidth .container { padding: 0 0.5rem; } .article-content-inner { padding: 1rem; } .author-bio-card { padding: 1rem; } .post-title-modern { font-size: 1.8rem; } .section-title { font-size: 1.5rem; } .breadcrumb-nav { margin-bottom: 1rem; } .category-badge-wrapper { margin-bottom: 1rem; } .post-header { margin-bottom: 2rem; } .carousel-slide { width: calc(100% - 1rem); } .carousel-fullwidth-track { padding: 0 0.5rem; gap: 1rem; } .image-zoom-btn { width: 50px; height: 50px; font-size: 1rem; } .share-actions-row { grid-template-columns: 1fr; } }
+
+    /* ── Instagram Share Modal ── */
+    #instagram-share-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.72); z-index: 9999; justify-content: center; align-items: center; padding: 1rem; box-sizing: border-box; }
+    #instagram-share-modal.active { display: flex; }
+    .ig-modal-box { background: var(--bg-section-1); border-radius: 1rem; width: 100%; max-width: 460px; max-height: calc(100vh - 2rem); overflow-y: auto; overflow-x: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); display: flex; flex-direction: column; }
+    @media (max-width: 500px) { #instagram-share-modal { padding: 0.5rem; align-items: flex-end; } .ig-modal-box { max-width: 100%; max-height: 92vh; border-radius: 1rem 1rem 0 0; } }
+    .ig-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1.1rem; background: var(--color-accent); border-radius: 1rem 1rem 0 0; flex-shrink: 0; }
+    @media (max-width: 500px) { .ig-modal-header { border-radius: 1rem 1rem 0 0; } }
+    .ig-modal-header h3 { font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.45rem; margin: 0; }
+    .ig-modal-header h3 i { font-size: 1.05rem; }
+    .ig-modal-close { background: rgba(255,255,255,0.22); border: none; border-radius: 50%; cursor: pointer; font-size: 0.8rem; color: #fff; width: 1.7rem; height: 1.7rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
+    .ig-modal-close:hover { background: rgba(255,255,255,0.4); }
+    .ig-modal-body { display: flex; flex-direction: column; padding: 1rem 1.1rem; gap: 0; flex: 1; }
+    .ig-modal-step { display: flex; flex-direction: column; gap: 0.45rem; padding-bottom: 0.9rem; border-bottom: 1px solid var(--border-color); margin-bottom: 0.9rem; }
+    .ig-modal-step:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    .ig-step-label { font-size: 0.75rem; font-weight: 700; color: var(--text-heading); display: flex; align-items: center; gap: 0.4rem; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+    .ig-step-number { background: var(--color-accent); color: #fff; border-radius: 50%; width: 1.3rem; height: 1.3rem; display: inline-flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 800; flex-shrink: 0; }
+    .ig-preview-img { width: 100%; border-radius: 0.5rem; object-fit: cover; max-height: 170px; display: block; }
+    .ig-caption-textarea { width: 100%; padding: 0.55rem 0.65rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background: var(--bg-section-2); color: var(--text-primary); font-size: 0.8rem; resize: none; font-family: inherit; box-sizing: border-box; line-height: 1.5; }
+    .ig-action-btn { width: 100%; padding: 0.6rem 0.9rem; border-radius: 0.5rem; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.45rem; text-decoration: none; transition: opacity 0.15s; border: none; box-sizing: border-box; }
+    .ig-action-btn:hover { opacity: 0.83; }
+    .ig-btn-outline { background: var(--bg-section-2); border: 1px solid var(--border-color); color: var(--text-primary); }
+    .ig-btn-instagram { background: linear-gradient(90deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: #fff; }
+    .ig-btn-accent { background: var(--color-accent); color: #fff; }
+    .ig-mobile-share { padding: 0 1.1rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex-shrink: 0; }
+    .ig-link-row { display: flex; gap: 0.35rem; align-items: stretch; }
+    .ig-link-input { flex: 1; min-width: 0; padding: 0.5rem 0.55rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background: var(--bg-section-2); color: var(--text-secondary); font-size: 0.75rem; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; }
+    .ig-copy-link-btn { padding: 0 0.65rem; border-radius: 0.5rem; border: 1px solid var(--border-color); background: var(--bg-section-2); color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; flex-shrink: 0; transition: border-color 0.15s, color 0.15s, background 0.15s; display: flex; align-items: center; }
+    .ig-copy-link-btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    .ig-copy-link-btn.copied { background: #16a34a; color: #fff; border-color: #16a34a; }
+    .ig-hint { font-size: 0.74rem; color: var(--text-secondary); line-height: 1.45; margin: 0; }
+    .ig-divider { border: none; border-top: 1px solid var(--border-color); margin-bottom: 0.75rem; }
+    .ig-mobile-label { font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 0.35rem; }
+    </style>
+
+    <!-- ▼▼▼ MODAL DE COMPARTILHAMENTO INSTAGRAM ▼▼▼ -->
+    <div id="instagram-share-modal" role="dialog" aria-modal="true" aria-labelledby="ig-modal-title">
+        <div class="ig-modal-box">
+
+            <!-- Header com gradiente Instagram -->
+            <div class="ig-modal-header">
+                <h3 id="ig-modal-title">
+                    <i class="fab fa-instagram"></i>
+                    Compartilhar no Instagram
+                </h3>
+                <button id="close-share-modal-btn" class="ig-modal-close" aria-label="Fechar modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="ig-modal-body">
+
+                <!-- PASSO 1: Link completo da matéria -->
+                <div class="ig-modal-step">
+                    <p class="ig-step-label">
+                        <span class="ig-step-number">1</span>
+                        Link da matéria completa
+                    </p>
+                    <div class="ig-link-row">
+                        <input id="article-link-input" type="text" class="ig-link-input"
+                               value="{{ request.build_absolute_uri }}" readonly>
+                        <button id="copy-article-link-btn" class="ig-copy-link-btn" title="Copiar link">
+                            <i class="far fa-copy"></i>
+                        </button>
+                    </div>
+                    <p class="ig-hint">
+                        💡 Cole nos Stories (Figurinha de Link), na Bio ou na legenda — seus seguidores acessam a matéria completa diretamente.
+                    </p>
+                </div>
+
+                <!-- PASSO 2: Imagem (se existir) -->
+                {% if post.thumbnail %}
+                <div class="ig-modal-step">
+                    <p class="ig-step-label">
+                        <span class="ig-step-number">2</span>
+                        Imagem do post
+                    </p>
+                    <img src="{{ post.thumbnail.url }}" alt="{{ post.title }}" class="ig-preview-img">
+                    <button id="download-post-img-btn" class="ig-action-btn ig-btn-outline">
+                        <i class="fas fa-download"></i>
+                        <span>Baixar Imagem</span>
+                    </button>
+                </div>
+                {% endif %}
+
+                <!-- PASSO 3: Legenda completa -->
+                <div class="ig-modal-step">
+                    <p class="ig-step-label">
+                        <span class="ig-step-number">{% if post.thumbnail %}3{% else %}2{% endif %}</span>
+                        Legenda completa
+                    </p>
+                    <textarea id="share-caption-text" class="ig-caption-textarea" rows="6" readonly>📖 {{ post.title }}
+
+{{ post.meta_description|default:post.content|striptags|truncatechars:1800 }}
+
+🔗 Leia a matéria completa: {{ request.build_absolute_uri }}
+
+#{{ post.category.name|default:"blog"|slugify }} #artigo #blog</textarea>
+                    <button id="copy-caption-btn" class="ig-action-btn ig-btn-outline">
+                        <i class="far fa-copy"></i>
+                        <span>Copiar Legenda</span>
+                    </button>
+                </div>
+
+                <!-- PASSO final: Abrir Instagram -->
+                <div class="ig-modal-step">
+                    <p class="ig-step-label">
+                        <span class="ig-step-number">{% if post.thumbnail %}4{% else %}3{% endif %}</span>
+                        Publique no Instagram
+                    </p>
+                    <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" class="ig-action-btn ig-btn-instagram">
+                        <i class="fab fa-instagram"></i>
+                        <span>Abrir Instagram</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Compartilhamento nativo mobile (Web Share API — oculto por padrão) -->
+            <div id="share-mobile-wrapper" class="ig-mobile-share" style="display:none;">
+                <div class="ig-divider"></div>
+                <p class="ig-mobile-label">
+                    <i class="fas fa-mobile-alt"></i>
+                    Ou compartilhe direto pelo app:
+                </p>
+                <button id="mobile-native-share-btn" class="ig-action-btn ig-btn-accent">
+                    <i class="fas fa-share-alt"></i>
+                    <span>Compartilhar Matéria via App</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ▼▼▼ BARRA DE PROGRESSO DE LEITURA (LÓGICA CORRIGIDA) ▼▼▼
+        const progressBarFill = document.getElementById("reading-progress");
+        if (progressBarFill) {
+            window.addEventListener("scroll", function() {
+                // SELETOR CORRIGIDO
+                const contentElement = document.querySelector('.article-content-frame');
+                if (!contentElement) return;
+
+                const contentTop = contentElement.offsetTop;
+                const contentHeight = contentElement.scrollHeight;
+                const windowHeight = window.innerHeight;
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+                const scrollableDistance = contentHeight - windowHeight;
+                const progressInContent = Math.max(0, scrollTop - contentTop);
+                
+                let progress = 0;
+                if (scrollableDistance > 0) {
+                    progress = (progressInContent / scrollableDistance) * 100;
+                }
+                
+                progress = Math.min(Math.max(progress, 0), 100);
+                progressBarFill.style.width = progress + "%";
+            });
+        }
+
+        // ▼▼▼ SCRIPT PARA O FUNDO ANIMADO COM CANVAS (LÓGICA OTIMIZADA MANTIDA) ▼▼▼
+        const canvas = document.getElementById('hero-canvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            const heroSection = document.querySelector('.post-hero-section');
+            
+            let animationFrameId = null;
+
+            function resizeCanvas() {
+                canvas.width = heroSection.offsetWidth;
+                canvas.height = heroSection.offsetHeight;
+            }
+            class Particle { constructor(x, y, radius, color, velocity) { this.x = x; this.y = y; this.radius = radius; this.color = color; this.velocity = velocity; } draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false); ctx.fillStyle = this.color; ctx.fill(); } update() { this.x += this.velocity.x; this.y += this.velocity.y; if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) { this.velocity.x = -this.velocity.x; } if (this.y - this.radius < 0 || this.y + this.radius > canvas.height) { this.velocity.y = -this.velocity.y; } this.draw(); } }
+            function init() { particles = []; const particleCount = Math.floor((canvas.width * canvas.height) / 15000); for (let i = 0; i < particleCount; i++) { const radius = Math.random() * 1.5 + 0.5; const x = Math.random() * (canvas.width - radius * 2) + radius; const y = Math.random() * (canvas.height - radius * 2) + radius; const color = 'rgba(255, 255, 255, 0.5)'; const velocity = { x: (Math.random() - 0.5) * 0.3, y: (Math.random() - 0.5) * 0.3 }; particles.push(new Particle(x, y, radius, color, velocity)); } }
+            function connect() { let opacityValue = 1; for (let a = 0; a < particles.length; a++) { for (let b = a; b < particles.length; b++) { const distance = Math.sqrt(Math.pow(particles[a].x - particles[b].x, 2) + Math.pow(particles[a].y - particles[b].y, 2)); if (distance < 100) { opacityValue = 1 - (distance / 100); ctx.strokeStyle = `rgba(255, 255, 255, ${opacityValue * 0.3})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y); ctx.stroke(); } } } }
+            
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(particle => { particle.update(); });
+                connect();
+                animationFrameId = requestAnimationFrame(animate);
+            }
+
+            function startAnimation() {
+                if (!animationFrameId) {
+                    animate();
+                }
+            }
+
+            function stopAnimation() {
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+            
+            resizeCanvas();
+            init();
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        startAnimation();
+                    } else {
+                        stopAnimation();
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            observer.observe(heroSection);
+            
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                init();
+            });
+        }
+
+        // ▼▼▼ SCRIPT DO CARROSSEL (LÓGICA MANTIDA) ▼▼▼
+        const carousel = document.getElementById('related-posts-carousel');
+        if (carousel) {
+            const track = carousel.querySelector('.carousel-fullwidth-track'); const slides = Array.from(track.children); const nextButton = document.getElementById('next-btn-fullwidth'); const prevButton = document.getElementById('prev-btn-fullwidth'); const indicatorsContainer = document.getElementById('carousel-indicators-fullwidth'); let indicators = []; if (slides.length <= 1) { if(indicatorsContainer) indicatorsContainer.style.display = 'none'; if(nextButton) nextButton.style.display = 'none'; if(prevButton) prevButton.style.display = 'none'; } else { slides.forEach((slide, index) => { const button = document.createElement('button'); button.classList.add('carousel-indicator-fullwidth'); button.setAttribute('aria-label', `Ir para o artigo ${index + 1}`); indicatorsContainer.appendChild(button); indicators.push(button); button.addEventListener('click', () => { slide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); }); }); const updateControls = () => { const scrollLeft = carousel.scrollLeft; const scrollWidth = carousel.scrollWidth; const width = carousel.clientWidth; if(prevButton) prevButton.disabled = scrollLeft < 10; if(nextButton) nextButton.disabled = scrollLeft > (scrollWidth - width - 10); const carouselCenter = scrollLeft + width / 2; let activeIndex = 0; let closestDistance = Infinity; slides.forEach((slide, index) => { const slideCenter = slide.offsetLeft - track.offsetLeft + slide.offsetWidth / 2; const distance = Math.abs(carouselCenter - slideCenter); if (distance < closestDistance) { closestDistance = distance; activeIndex = index; } }); indicators.forEach((ind, i) => ind.classList.toggle('active', i === activeIndex)); }; if(nextButton) { nextButton.addEventListener('click', () => { const slideWidth = slides[0].offsetWidth; const gap = parseInt(window.getComputedStyle(track).gap); carousel.scrollBy({ left: slideWidth + gap, behavior: 'smooth' }); }); } if(prevButton) { prevButton.addEventListener('click', () => { const slideWidth = slides[0].offsetWidth; const gap = parseInt(window.getComputedStyle(track).gap); carousel.scrollBy({ left: -(slideWidth + gap), behavior: 'smooth' }); }); } let debounceTimer; carousel.addEventListener('scroll', () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(updateControls, 50); }); updateControls(); }
+        }
+
+        // ▼▼▼ SCRIPT DO LIGHTBOX (LÓGICA MANTIDA) ▼▼▼
+        const zoomButton = document.querySelector('[data-action="zoom"]');
+        const lightbox = document.getElementById('image-lightbox');
+        if (zoomButton && lightbox) {
+            const lightboxImg = document.getElementById('lightbox-img'); const closeBtn = lightbox.querySelector('.lightbox-close-btn'); const featuredImg = document.querySelector('.featured-image'); zoomButton.addEventListener('click', (e) => { e.preventDefault(); if(featuredImg) lightboxImg.src = featuredImg.src; lightbox.classList.add('active'); }); const closeLightbox = () => { lightbox.classList.remove('active'); }; closeBtn.addEventListener('click', closeLightbox); lightbox.addEventListener('click', (e) => { if (e.target === lightbox) { closeLightbox(); } }); document.addEventListener('keydown', (e) => { if (e.key === "Escape" && lightbox.classList.contains('active')) { closeLightbox(); } });
+        }
+
+        // ▼▼▼ SCRIPT DO COMPARTILHAMENTO INSTAGRAM ▼▼▼
+        const shareBtn = document.getElementById('instagram-share-btn');
+        const shareModal = document.getElementById('instagram-share-modal');
+        const closeShareModalBtn = document.getElementById('close-share-modal-btn');
+        
+        if (shareBtn && shareModal) {
+            const openModal = () => {
+                shareModal.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Evita scroll de fundo
+            };
+            
+            const closeModal = () => {
+                shareModal.classList.remove('active');
+                document.body.style.overflow = '';
+            };
+            
+            shareBtn.addEventListener('click', openModal);
+            if (closeShareModalBtn) closeShareModalBtn.addEventListener('click', closeModal);
+            
+            shareModal.addEventListener('click', (e) => {
+                if (e.target === shareModal) closeModal();
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === "Escape" && shareModal.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+        }
+        
+        // Copiar legenda
+        const copyCaptionBtn = document.getElementById('copy-caption-btn');
+        const captionTextarea = document.getElementById('share-caption-text');
+        
+        if (copyCaptionBtn && captionTextarea) {
+            copyCaptionBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(captionTextarea.value);
+                    const copyText = copyCaptionBtn.querySelector('span');
+                    const copyIcon = copyCaptionBtn.querySelector('i');
+                    
+                    copyCaptionBtn.classList.add('copied');
+                    if (copyText) copyText.textContent = 'Copiado!';
+                    if (copyIcon) copyIcon.className = 'fas fa-check';
+                    
+                    setTimeout(() => {
+                        copyCaptionBtn.classList.remove('copied');
+                        if (copyText) copyText.textContent = 'Copiar Legenda';
+                        if (copyIcon) copyIcon.className = 'far fa-copy';
+                    }, 2500);
+                } catch (err) {
+                    console.error('Falha ao copiar:', err);
+                }
+            });
+        }
+        
+        // Copiar link da matéria
+        const copyArticleLinkBtn = document.getElementById('copy-article-link-btn');
+        const articleLinkInput = document.getElementById('article-link-input');
+
+        if (copyArticleLinkBtn && articleLinkInput) {
+            copyArticleLinkBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(articleLinkInput.value);
+                    copyArticleLinkBtn.classList.add('copied');
+                    copyArticleLinkBtn.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(() => {
+                        copyArticleLinkBtn.classList.remove('copied');
+                        copyArticleLinkBtn.innerHTML = '<i class="far fa-copy"></i>';
+                    }, 2500);
+                } catch (err) {
+                    articleLinkInput.select();
+                    document.execCommand('copy');
+                }
+            });
+        }
+
+        // Download da imagem (forçando download via fetch de blob em caso de cross-origin / S3)
+        const downloadImgBtn = document.getElementById('download-post-img-btn');
+        const postImgUrl = "{% if post.thumbnail %}{{ request.scheme }}://{{ request.get_host }}{{ post.thumbnail.url }}{% endif %}";
+        const postSlug = "{{ post.slug|default:'post' }}";
+        
+        if (downloadImgBtn && postImgUrl) {
+            downloadImgBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const originalContent = downloadImgBtn.innerHTML;
+                downloadImgBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Baixando...';
+                downloadImgBtn.disabled = true;
+                
+                try {
+                    const response = await fetch(postImgUrl);
+                    const blob = await response.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    
+                    const tempLink = document.createElement('a');
+                    tempLink.href = blobUrl;
+                    tempLink.download = `${postSlug}_instagram.jpg`;
+                    document.body.appendChild(tempLink);
+                    tempLink.click();
+                    document.body.removeChild(tempLink);
+                    
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                } catch (err) {
+                    console.error('Erro ao baixar imagem:', err);
+                    // Fallback para abrir em nova aba se falhar (ex: CORS rígido sem permitir fetch local)
+                    window.open(postImgUrl, '_blank');
+                } finally {
+                    downloadImgBtn.innerHTML = originalContent;
+                    downloadImgBtn.disabled = false;
+                }
+            });
+        }
+        
+        // Compartilhamento Nativo no Celular (Web Share API com suporte a arquivos)
+        const shareMobileWrapper = document.getElementById('share-mobile-wrapper');
+        const mobileShareBtn = document.getElementById('mobile-native-share-btn');
+        const postTitle = "{{ post.title|escapejs }}";
+        const postExcerpt = "{{ post.meta_description|default:post.content|striptags|truncatewords:25|escapejs }}";
+        const postUrl = window.location.href;
+        
+        if (navigator.share) {
+            if (shareMobileWrapper) shareMobileWrapper.style.display = 'block';
+            
+            if (mobileShareBtn) {
+                mobileShareBtn.addEventListener('click', async () => {
+                    const caption = `${postTitle}\n\n${postExcerpt}\n\nConfira no link: ${postUrl}\n\n#{{ post.category.name|default:"blog"|slugify }} #artigo #blog`;
+                    
+                    try {
+                        if (postImgUrl) {
+                            const response = await fetch(postImgUrl);
+                            const blob = await response.blob();
+                            const file = new File([blob], 'share.jpg', { type: blob.type });
+                            
+                            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                await navigator.share({
+                                    files: [file],
+                                    title: postTitle,
+                                    text: caption
+                                });
+                                return;
+                            }
+                        }
+                        
+                        // Fallback de texto + URL se não puder compartilhar arquivo
+                        await navigator.share({
+                            title: postTitle,
+                            text: caption,
+                            url: postUrl
+                        });
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            console.error('Erro no compartilhamento nativo:', err);
+                        }
+                    }
+                });
+            }
+        }
+    });
+    </script>
+{% endblock %}
+
+

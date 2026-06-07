@@ -1,0 +1,40 @@
+{% extends "blog/base.html" %}
+{% load static i18n %}
+
+{% block title %}{% if page_title %}{{ page_title }}{% else %}{% trans "Todos os Artigos" %}{% endif %} - {{ site_settings.site_name }}{% endblock %}
+
+{% block content %}
+
+<header class="page-header fade-in-element">
+    <div class="container mx-auto px-4">
+        <h1 class="page-title">
+            {% if page_title %}{{ page_title }}{% else %}{% trans "Todos os Artigos" %}{% endif %}
+        </h1>
+        {% if not page_title %}
+            <p class="page-subtitle">{% trans "Navegue por nossa coleção completa de artigos. Encontre insights sobre design, tecnologia e estilo de vida." %}</p>
+        {% endif %}
+    </div>
+</header>
+
+<div class="section-bg-1">
+    <div class="container mx-auto px-4 py-16">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for post in posts %}
+            <div class="fade-in-element">
+                <a href="{{ post.get_absolute_url }}" class="glass-card flex flex-col h-full">
+                    {# ✅ CORRETO: Este include reutiliza o card, garantindo consistência. O erro estava DENTRO deste parcial. #}
+                    {% include "blog/partials/post_card_content.html" with post=post card_type='small' %}
+                </a>
+            </div>
+            {% empty %}
+            <p class="col-span-full text-center text-secondary py-12">{% trans "Nenhum artigo encontrado." %}</p>
+            {% endfor %}
+        </div>
+        
+        {% if is_paginated %}
+            {% include "blog/partials/pagination.html" with page_obj=page_obj %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

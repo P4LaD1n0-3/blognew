@@ -1,0 +1,93 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Categorias{% endblock %}
+{% block breadcrumb %}<span class="mx-2 text-slate-300">/</span> Categorias{% endblock %}
+{% block page_heading %}Categorias{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'dashboard:category_create' %}"
+   class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors shadow-sm">
+  <i class="fas fa-plus"></i> Nova Categoria
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-slate-100">
+    <span class="text-sm text-slate-500">{{ page_obj.paginator.count }} categoria(s)</span>
+  </div>
+
+  {% if page_obj.object_list %}
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-5">
+    {% for cat in page_obj %}
+    <div class="border border-slate-200 rounded-2xl overflow-hidden hover:border-slate-300 hover:shadow-md transition-all group">
+      <!-- Color band -->
+      <div class="h-2" style="background:{{ cat.color|default:'#94a3b8' }};"></div>
+      <div class="p-4">
+        <div class="flex items-start gap-3 mb-3">
+          {% if cat.image %}
+            <img src="{{ cat.image.url }}" alt="" class="w-10 h-10 rounded-xl object-cover flex-shrink-0">
+          {% else %}
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style="background:{{ cat.color|default:'#94a3b8' }}20;">
+              <i class="fas fa-layer-group text-sm" style="color:{{ cat.color|default:'#94a3b8' }};"></i>
+            </div>
+          {% endif %}
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-slate-900 truncate">
+              {{ cat|default:'(sem nome)' }}
+            </p>
+            <p class="text-xs text-slate-400 font-mono truncate">{{ cat.slug }}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2 py-1 rounded-full font-medium" style="background:{{ cat.color|default:'#94a3b8' }}20; color:{{ cat.color|default:'#94a3b8' }};">
+            {{ cat.posts.count }} post(s)
+          </span>
+          <div class="ml-auto flex gap-1">
+            <a href="{% url 'dashboard:category_edit' cat.pk %}"
+               class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+              <i class="fas fa-pen text-xs"></i>
+            </a>
+            <form method="post" action="{% url 'dashboard:category_delete' cat.pk %}"
+                  onsubmit="return confirm('Excluir esta categoria? Posts associados podem ser afetados.')" class="inline">
+              {% csrf_token %}
+              <button type="submit"
+                      class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                <i class="fas fa-trash-alt text-xs"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-end gap-1">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}"
+         class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">
+        <i class="fas fa-chevron-left text-xs"></i>
+      </a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}"
+         class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">
+        <i class="fas fa-chevron-right text-xs"></i>
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="py-16 text-center">
+    <i class="fas fa-layer-group text-slate-200 text-5xl mb-4"></i>
+    <p class="text-slate-500 font-medium">Nenhuma categoria encontrada</p>
+    <a href="{% url 'dashboard:category_create' %}" class="mt-4 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-xl">
+      <i class="fas fa-plus"></i> Criar categoria
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
