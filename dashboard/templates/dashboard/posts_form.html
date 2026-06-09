@@ -159,7 +159,7 @@
   .bottom-panels {
     padding: 0 24px 24px;
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: max-content 1fr;
     gap: 20px;
     align-items: start;
   }
@@ -169,11 +169,25 @@
     background: var(--bg-card-optimized);
     border: 1px solid var(--border-color);
     border-radius: 14px;
-    padding: 16px;
-    min-width: 240px;
+    overflow: hidden;
   }
+  .thumb-panel-header {
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-heading);
+  }
+  .thumb-panel-header:hover { background: var(--bg-section-2); }
+  .thumb-body { padding: 18px; display: flex; flex-direction: column; }
+  .thumb-body.hidden { display: none; }
   .thumb-preview {
-    width: 100%;
+    width: 320px;
+    max-width: 100%;
     aspect-ratio: 16/9;
     object-fit: cover;
     border-radius: 10px;
@@ -181,7 +195,8 @@
     display: block;
   }
   .thumb-placeholder {
-    width: 100%;
+    width: 320px;
+    max-width: 100%;
     aspect-ratio: 16/9;
     background: var(--bg-section-2);
     border: 2px dashed var(--border-color);
@@ -375,18 +390,21 @@
 
     <!-- Thumbnail -->
     <div class="thumb-panel">
-      <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin-bottom:10px;">
-        <i class="fas fa-image" style="margin-right:5px;"></i>Imagem de Destaque
-      </p>
-      {% if post and post.thumbnail %}
-        <img src="{{ post.thumbnail.url }}" alt="" class="thumb-preview">
-      {% else %}
-        <div class="thumb-placeholder">
-          <i class="fas fa-image" style="font-size:28px;opacity:.3;"></i>
-          <span>Nenhuma imagem</span>
-        </div>
-      {% endif %}
-      {{ form.thumbnail }}
+      <div class="thumb-panel-header" onclick="toggleThumb()">
+        <span><i class="fas fa-image" style="margin-right:8px;color:var(--color-accent);"></i>Imagem de Destaque</span>
+        <i class="fas fa-chevron-down" id="thumb-caret" style="font-size:11px;color:var(--text-secondary);transition:transform .2s;"></i>
+      </div>
+      <div class="thumb-body" id="thumb-body">
+        {% if post and post.thumbnail %}
+          <img src="{{ post.thumbnail.url }}" alt="" class="thumb-preview">
+        {% else %}
+          <div class="thumb-placeholder">
+            <i class="fas fa-image" style="font-size:28px;opacity:.3;"></i>
+            <span>Nenhuma imagem</span>
+          </div>
+        {% endif %}
+        {{ form.thumbnail }}
+      </div>
     </div>
 
     <!-- SEO -->
@@ -487,6 +505,15 @@ if (titleInput && slugInput) {
 function toggleSEO() {
   const body  = document.getElementById('seo-body');
   const caret = document.getElementById('seo-caret');
+  const open  = !body.classList.contains('hidden');
+  body.classList.toggle('hidden', open);
+  caret.style.transform = open ? 'rotate(-90deg)' : 'rotate(0)';
+}
+
+// ── Thumb panel toggle ───────────────────────────────────────────
+function toggleThumb() {
+  const body  = document.getElementById('thumb-body');
+  const caret = document.getElementById('thumb-caret');
   const open  = !body.classList.contains('hidden');
   body.classList.toggle('hidden', open);
   caret.style.transform = open ? 'rotate(-90deg)' : 'rotate(0)';
