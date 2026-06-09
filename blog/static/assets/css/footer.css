@@ -123,17 +123,46 @@
 
 /* Media query para telas pequenas (mobile) */
 @media (max-width: 767px) {
-    .footer-container,
-    .footer-right-content,
-    .footer-nav,
-    .footer-controls {
+    .site-footer {
+        padding: 1.5rem 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .footer-container {
         flex-direction: column;
         align-items: center;
         text-align: center;
+        gap: 1.5rem;
+    }
+
+    .footer-brand h3 {
+        font-size: 1.15rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .footer-right-content {
+        flex-direction: column;
+        align-items: center;
         width: 100%;
+        gap: 1.25rem;
     }
 
     .footer-nav {
+        flex-direction: row;
         justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+    }
+
+    .footer-controls {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        gap: 1rem;
+    }
+
+    .social-links {
+        display: none;
     }
 }

@@ -62,4 +62,4 @@ EXPOSE 7220
 ENV DATABASE_URL=sqlite:////app/data/db.sqlite3
 
 # Comando final para iniciar o servidor Gunicorn quando o contêiner rodar.
-CMD ["gunicorn", "--bind", "0.0.0.0:7220", "core.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:7220", "--timeout", "300", "core.wsgi:application"]

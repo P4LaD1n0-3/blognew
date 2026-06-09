@@ -21,7 +21,7 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {% for post in posts %}
-            <div class="fade-in-element">
+            <div class="fade-in-element mx-6 md:mx-0">
                 <a href="{{ post.get_absolute_url }}" class="glass-card flex flex-col h-full">
                     {# ✅ CORRETO: Este include reutiliza o card, garantindo consistência. O erro estava DENTRO deste parcial. #}
                     {% include "blog/partials/post_card_content.html" with post=post card_type='small' %}

@@ -17,56 +17,86 @@
     }
 
     /* ---------- Estrutura geral da página "Sobre" ---------- */
+    /* Wrapper principal para travar o eixo X e impedir qualquer overflow lateral */
+    .about-page-wrapper {
+        overflow-x: hidden;
+        width: 100%;
+        position: relative;
+    }
+
     .about-page-container {
         max-width: 1200px;
         margin: auto;
-        padding: 4rem 1rem;
+        padding: 3rem 1rem;
     }
 
     .about-hero {
         text-align: center;
-        margin-bottom: 4rem;
+        margin-bottom: 3rem;
     }
     .about-hero h1 {
-        font-size: clamp(2.5rem, 5vw, 3.5rem);
+        font-size: clamp(2rem, 8vw, 3.5rem);
         font-weight: 800;
         color: var(--text-heading);
+        line-height: 1.2;
     }
-    /* O estilo para o parágrafo do subtítulo pode ser removido ou mantido, não afeta */
     .about-hero p {
-        font-size: 1.25rem;
+        font-size: clamp(1rem, 4vw, 1.25rem);
         color: var(--text-secondary);
         max-width: 600px;
         margin: 1rem auto 0;
     }
 
     .content-prose {
-        font-size: 1.1rem;
+        font-size: clamp(1rem, 4vw, 1.15rem);
         line-height: 1.7;
         color: var(--text-primary);
         margin-bottom: 5rem;
+        /* Trava de texto longo para não gerar scroll X */
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+    .content-prose img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 15px -3px var(--shadow-color);
+        margin: 1.5rem 0;
+    }
+    .content-prose p {
+        margin-bottom: 1.25rem;
+    }
+    .content-prose h2 {
+        font-size: clamp(1.5rem, 6vw, 2rem);
+        font-weight: 700;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: var(--text-heading);
     }
 </style>
 
-<div class="about-page-container">
-    {% if page %}
-        <header class="about-hero">
-            <h1>{{ page.title|default:_("Sobre Nós") }}</h1>
+<div class="about-page-wrapper">
+    <div class="about-page-container">
+        {% if page %}
+            <header class="about-hero">
+                <h1>{{ page.title|default:_("Sobre Nós") }}</h1>
             </header>
 
-        <article class="content-prose">
-            {{ page.content|safe }}
-        </article>
-    {% else %}
-        <header class="about-hero">
-            <h1>{% trans "Sobre Nós" %}</h1>
-            <p>{% blocktrans %}Conheça nossa missão, valores e a equipe por trás do {{ site_settings.site_name }}.{% endblocktrans %}</p>
-        </header>
-    {% endif %}
+            <article class="content-prose">
+                {{ page.content|safe }}
+            </article>
+        {% else %}
+            <header class="about-hero">
+                <h1>{% trans "Sobre Nós" %}</h1>
+                <p>{% blocktrans %}Conheça nossa missão, valores e a equipe por trás do {{ site_settings.site_name }}.{% endblocktrans %}</p>
+            </header>
+        {% endif %}
 
-    {% if team_members %}
-        {% include 'blog/partials/team_carousel.html' %}
-    {% endif %}
+        {% if team_members %}
+            {% include 'blog/partials/team_carousel.html' %}
+        {% endif %}
+    </div>
 </div>
 
 {% endblock %}

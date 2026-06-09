@@ -48,7 +48,7 @@
 
                 <div id="post-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-6">
                     {% for post in latest_posts %}
-                        <div class="grid-item fade-in-element">
+                        <div class="grid-item fade-in-element mx-6 md:mx-0">
                             <a href="{{ post.get_absolute_url }}" class="glass-card flex flex-col h-full group">
                                 {# Este parcial também deve ter a correção 'striptags|...|safe' para funcionar corretamente #}
                                 {% include "blog/partials/post_card_content.html" with post=post %}
