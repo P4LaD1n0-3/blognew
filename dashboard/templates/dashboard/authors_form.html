@@ -11,101 +11,144 @@
 {% block content %}
 <form method="post" enctype="multipart/form-data">
   {% csrf_token %}
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+  <div style="display:grid; grid-template-columns: 1fr; gap:20px;">
+    @media(min-width: 1280px) {
+      /* Handled directly in grid for simplicity, wait no this is inline style. Let's just use CSS classes from base.html or direct styling. */
+    }
+  </div>
+
+  <style>
+    .form-grid-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media(min-width: 1280px) { .form-grid-layout { grid-template-columns: 2fr 1fr; } }
+  </style>
+
+  <div class="form-grid-layout">
     <!-- Left -->
-    <div class="xl:col-span-2 space-y-5">
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">Informações Pessoais</h3>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Nome Completo <span class="text-red-500">*</span></label>
-            {{ form.full_name }}
-            {% if form.full_name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.full_name.errors.0 }}</p>{% endif %}
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Email <span class="text-red-500">*</span></label>
-            {{ form.email }}
-            {% if form.email.errors %}<p class="text-red-500 text-xs mt-1">{{ form.email.errors.0 }}</p>{% endif %}
-          </div>
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="dash-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size:16px; font-weight:700; color:var(--text-heading);">Informações Pessoais</h3>
         </div>
+        
+        <div style="padding: 24px;">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom: 20px;">
+            <div>
+              <label class="field-label">Nome Completo <span style="color:#ef4444;">*</span></label>
+              {{ form.full_name }}
+              {% if form.full_name.errors %}<p style="color:#ef4444; font-size:12px; margin-top:4px;">{{ form.full_name.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="field-label">Email <span style="color:#ef4444;">*</span></label>
+              {{ form.email }}
+              {% if form.email.errors %}<p style="color:#ef4444; font-size:12px; margin-top:4px;">{{ form.email.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
 
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-slate-700 mb-1.5">Cargo / Função</label>
-          {{ form.role }}
-        </div>
+          <div style="margin-bottom: 20px;">
+            <label class="field-label">Cargo / Função</label>
+            {{ form.role }}
+          </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1.5">Biografia</label>
-          {{ form.bio }}
+          <div>
+            <label class="field-label">Biografia</label>
+            {{ form.bio }}
+          </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">Redes Sociais</h3>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">
-              <i class="fab fa-linkedin text-blue-600 mr-1"></i> LinkedIn
-            </label>
-            {{ form.linkedin_url }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">
-              <i class="fab fa-instagram text-pink-500 mr-1"></i> Instagram
-            </label>
-            {{ form.instagram_url }}
-          </div>
+      <div class="dash-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size:16px; font-weight:700; color:var(--text-heading);">Redes Sociais</h3>
         </div>
+        
+        <div style="padding: 24px;">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom: 20px;">
+            <div>
+              <label class="field-label"><i class="fab fa-linkedin" style="color:#2563eb; margin-right:4px;"></i> LinkedIn</label>
+              {{ form.linkedin_url }}
+            </div>
+            <div>
+              <label class="field-label"><i class="fab fa-instagram" style="color:#ec4899; margin-right:4px;"></i> Instagram</label>
+              {{ form.instagram_url }}
+            </div>
+          </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1.5">
-            <i class="fab fa-whatsapp text-green-500 mr-1"></i> WhatsApp
-          </label>
-          {{ form.whatsapp_number }}
-          <p class="text-xs text-slate-400 mt-1">Apenas números com código do país. Ex: 5511999999999</p>
+          <div>
+            <label class="field-label"><i class="fab fa-whatsapp" style="color:#22c55e; margin-right:4px;"></i> WhatsApp</label>
+            {{ form.whatsapp_number }}
+            <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Apenas números com código do país. Ex: 5511999999999</p>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Right -->
-    <div class="space-y-5">
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">Foto de Perfil</h3>
-        {% if author and author.profile_picture %}
-          <img src="{{ author.profile_picture.url }}" alt="{{ author.full_name }}"
-               class="w-24 h-24 rounded-full object-cover mx-auto mb-3 border-4 border-slate-100">
-        {% else %}
-          <div class="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-user text-white text-2xl"></i>
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="dash-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size:16px; font-weight:700; color:var(--text-heading);">Foto de Perfil</h3>
+        </div>
+        
+        <div style="padding: 24px; text-align:center;">
+          {% if author and author.profile_picture %}
+            <img src="{{ author.profile_picture.url }}" alt="{{ author.full_name }}" id="image-preview" style="width:96px; height:96px; border-radius:50%; object-fit:cover; margin:0 auto 12px; border:4px solid var(--bg-section-2);">
+          {% else %}
+            <img src="" id="image-preview" style="width:96px; height:96px; border-radius:50%; object-fit:cover; margin:0 auto 12px; border:4px solid var(--bg-section-2); display:none;">
+            <div id="image-placeholder" style="width:96px; height:96px; border-radius:50%; background:var(--color-accent); display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
+              <i class="fas fa-user" style="color:#fff; font-size:32px;"></i>
+            </div>
+          {% endif %}
+          <div style="text-align:left;">
+            {{ form.profile_picture }}
           </div>
-        {% endif %}
-        {{ form.profile_picture }}
+        </div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">Configurações</h3>
-        <div class="flex items-center gap-3">
-          {{ form.is_team_member }}
-          <label class="text-sm text-slate-700">Membro da equipe principal</label>
+      <div class="dash-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size:16px; font-weight:700; color:var(--text-heading);">Configurações</h3>
         </div>
-        <p class="text-xs text-slate-400 mt-2">Se marcado, aparece na página Sobre</p>
+        
+        <div style="padding: 24px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            {{ form.is_team_member }}
+            <label class="field-label" style="margin-bottom:0;">Membro da equipe principal</label>
+          </div>
+          <p style="font-size:12px; color:var(--text-secondary); margin-top:8px;">Se marcado, aparece na página Sobre</p>
+        </div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <div class="flex gap-2">
-          <button type="submit"
-                  class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
-            <i class="fas fa-save mr-1.5"></i> Salvar
-          </button>
-          <a href="{% url 'dashboard:authors_list' %}"
-             class="px-4 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-            Cancelar
-          </a>
-        </div>
+      <div class="dash-card" style="padding: 20px 24px; background:var(--bg-section-2); display:flex; gap:12px;">
+        <button type="submit" class="btn-primary" style="flex:1; justify-content:center;">
+          <i class="fas fa-save"></i> Salvar
+        </button>
+        <a href="{% url 'dashboard:authors_list' %}" class="btn-secondary" style="justify-content:center;">
+          Cancelar
+        </a>
       </div>
     </div>
   </div>
 </form>
+
+<script>
+  // Live image preview
+  const imageInput = document.getElementById('id_profile_picture');
+  const imgPreview = document.getElementById('image-preview');
+  const imgPlaceholder = document.getElementById('image-placeholder');
+  
+  if (imageInput) {
+    imageInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        if (imgPreview) {
+          imgPreview.src = URL.createObjectURL(file);
+          imgPreview.style.display = 'block';
+        }
+        if (imgPlaceholder) {
+          imgPlaceholder.style.display = 'none';
+        }
+      }
+    });
+  }
+</script>
 {% endblock %}

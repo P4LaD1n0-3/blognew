@@ -133,65 +133,30 @@
   }
   .dash-see-all:hover { opacity: .75; }
 
-  /* Post row in list */
-  .post-row {
+  /* Minimalist List Rows */
+  .minimal-row {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 14px 22px;
+    justify-content: space-between;
+    padding: 12px 20px;
     border-bottom: 1px solid var(--border-color);
-    transition: background .12s;
+    transition: background .15s;
+    text-decoration: none;
   }
-  .post-row:nth-child(even) { background-color: var(--bg-section-2); }
-  .post-row:last-child { border-bottom: none; }
-  .post-row:hover { background-color: color-mix(in srgb, var(--bg-section-2) 80%, transparent); }
-  .post-row-thumb {
-    width: 48px; height: 48px;
-    border-radius: 8px;
-    object-fit: cover;
-    flex-shrink: 0;
-    border: 1px solid var(--border-color);
-  }
-  .post-row-placeholder {
-    width: 48px; height: 48px;
-    border-radius: 8px;
-    background: var(--bg-section-2);
-    border: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .post-title { font-size: 14px; font-weight: 600; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-  .post-meta  { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
-
-  .badge-pub  { display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;background:#dcfce7;color:#166534;flex-shrink:0; }
-  .badge-drft { display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;background:#fef9c3;color:#854d0e;flex-shrink:0; }
-
-  .edit-btn { color: var(--text-secondary); text-decoration: none; padding: 4px; border-radius: 6px; transition: color .15s, background .15s; flex-shrink:0; }
-  .edit-btn:hover { color: var(--color-accent); background: var(--bg-section-2); }
-
-  /* Contact row */
-  .contact-row {
-    padding: 12px 22px;
-    border-bottom: 1px solid var(--border-color);
-    transition: background .12s;
-  }
-  .contact-row:nth-child(even) { background-color: rgba(128, 128, 128, 0.04); }
-  .contact-row:hover { background-color: rgba(128, 128, 128, 0.08); }
+  .minimal-row:last-child { border-bottom: none; }
+  .minimal-row:hover { background-color: var(--bg-section-2); }
   
-  .contact-avatar {
-    width: 26px; height: 26px;
-    border-radius: 50%;
-    background: var(--color-accent);
-    opacity: .2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    position: relative;
-  }
-  .contact-avatar span { position: absolute; opacity: 5; color: var(--text-heading); font-size: 11px; font-weight: 700; }
+  .row-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .row-title { font-size: 13px; font-weight: 600; color: var(--text-heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-meta { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  
+  .row-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .status-dot.pub { background: #16a34a; box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2); }
+  .status-dot.drft { background: #d97706; box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2); }
+  
+  .row-btn { color: var(--text-secondary); transition: color .15s; }
+  .row-btn:hover { color: var(--color-accent); }
 
   /* Empty state */
   .empty-state { padding: 48px 22px; text-align: center; }
@@ -313,14 +278,14 @@
 .tables-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media(min-width:1280px){ .tables-grid { grid-template-columns: 2fr 1fr; gap: 14px; } }
 @media(max-width:479px) {
-  .post-row { padding: 10px 14px; gap: 8px; }
-  .post-row-thumb, .post-row-placeholder { width: 32px; height: 32px; }
+  .minimal-row { padding: 10px 14px; }
   .dash-section-header { padding: 10px 14px; }
-  .post-title { font-size: 12px; }
 }
 </style>
 
 <div class="tables-grid">
+  <!-- Left column (2fr): Recent Posts -->
+  <div style="display: flex; flex-direction: column; gap: 14px;">
 
   <!-- Recent posts -->
   <div class="dash-section">
@@ -332,29 +297,20 @@
     </div>
     {% if recent_posts %}
       {% for post in recent_posts %}
-      <div class="post-row">
-        {% if post.thumbnail %}
-          <img src="{{ post.thumbnail.url }}" alt="" class="post-row-thumb">
-        {% else %}
-          <div class="post-row-placeholder">
-            <i class="fas fa-image" style="font-size:12px;color:var(--border-color);"></i>
-          </div>
-        {% endif %}
-        <div style="flex:1;min-width:0;">
-          <p class="post-title">{{ post|default:'(sem título)' }}</p>
-          <p class="post-meta">{{ post.created_at|date:"d/m/Y" }} · {{ post.author|default:'Sem autor' }}</p>
+      <a href="{% url 'dashboard:post_edit' post.pk %}" class="minimal-row">
+        <div class="row-info">
+          <span class="row-title">{{ post|default:'(sem título)' }}</span>
+          <span class="row-meta">{{ post.created_at|date:"d/m/Y" }} · {{ post.author|default:'Sem autor' }}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <div class="row-actions">
           {% if post.status == 'published' %}
-            <span class="badge-pub"><i class="fas fa-circle" style="font-size:6px;"></i>Publicado</span>
+            <div class="status-dot pub" title="Publicado"></div>
           {% else %}
-            <span class="badge-drft"><i class="fas fa-circle" style="font-size:6px;"></i>Rascunho</span>
+            <div class="status-dot drft" title="Rascunho"></div>
           {% endif %}
-          <a href="{% url 'dashboard:post_edit' post.pk %}" class="edit-btn">
-            <i class="fas fa-pen" style="font-size:11px;"></i>
-          </a>
+          <i class="fas fa-chevron-right row-btn" style="font-size:10px;"></i>
         </div>
-      </div>
+      </a>
       {% endfor %}
     {% else %}
     <div class="empty-state">
@@ -366,6 +322,10 @@
     </div>
     {% endif %}
   </div>
+  </div> <!-- End Left Column -->
+
+  <!-- Right column (1fr): Contacts & Logs -->
+  <div style="display: flex; flex-direction: column; gap: 14px;">
 
   <!-- Recent contacts -->
   <div class="dash-section">
@@ -377,19 +337,15 @@
     </div>
     {% if recent_contacts %}
       {% for contact in recent_contacts %}
-      <div class="contact-row">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
-          <div style="width:24px;height:24px;border-radius:50%;background:var(--color-accent);opacity:.25;position:relative;flex-shrink:0;"></div>
-          <div style="width:24px;height:24px;border-radius:50%;position:absolute;display:flex;align-items:center;justify-content:center;">
-          </div>
-          <span style="width:24px;height:24px;border-radius:50%;background:var(--bg-section-2);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--color-accent);flex-shrink:0;">
-            {{ contact.name|slice:":1"|upper }}
-          </span>
-          <p style="font-size:13px;font-weight:600;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ contact.name }}</p>
+      <a href="{% url 'dashboard:contacts' %}" class="minimal-row">
+        <div class="row-info">
+          <span class="row-title">{{ contact.name }}</span>
+          <span class="row-meta">{{ contact.email }}</span>
         </div>
-        <p style="font-size:11px;color:var(--text-secondary);margin-left:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ contact.email }}</p>
-        <p style="font-size:11px;color:var(--text-primary);margin-left:32px;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ contact.message|truncatechars:80 }}</p>
-      </div>
+        <div class="row-actions">
+          <i class="fas fa-chevron-right row-btn" style="font-size:10px;"></i>
+        </div>
+      </a>
       {% endfor %}
     {% else %}
     <div class="empty-state">
@@ -398,6 +354,44 @@
     </div>
     {% endif %}
   </div>
+
+  <!-- Atividades Recentes (Timeline) -->
+  <div class="dash-section">
+    <div class="dash-section-header">
+      <span class="dash-section-title">Atividades Recentes</span>
+    </div>
+    {% if recent_logs %}
+      <div style="padding:16px;">
+      {% for log in recent_logs %}
+        <div style="display:flex;gap:12px;margin-bottom:16px;{% if forloop.last %}margin-bottom:0;{% endif %}">
+          {% if log.action_flag == 1 %}
+            <div style="width:28px;height:28px;border-radius:50%;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Adição"><i class="fas fa-plus" style="font-size:12px;"></i></div>
+          {% elif log.action_flag == 2 %}
+            <div style="width:28px;height:28px;border-radius:50%;background:#eff6ff;color:#1e40af;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Edição"><i class="fas fa-pen" style="font-size:12px;"></i></div>
+          {% elif log.action_flag == 3 %}
+            <div style="width:28px;height:28px;border-radius:50%;background:#fef2f2;color:#991b1b;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Exclusão"><i class="fas fa-trash" style="font-size:12px;"></i></div>
+          {% endif %}
+          <div>
+            <p style="font-size:13px;font-weight:600;color:var(--text-heading);margin-bottom:2px;">{{ log.object_repr|truncatechars:40 }}</p>
+            <p style="font-size:11px;color:var(--text-secondary);">
+              <i class="far fa-clock" style="font-size:10px;margin-right:2px;"></i> {{ log.action_time|date:"d/m/Y H:i" }} · {{ log.user.username }}
+            </p>
+            {% if log.change_message %}
+            <p style="font-size:11px;color:var(--text-primary);margin-top:4px;">{{ log.change_message }}</p>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-history"></i></div>
+        <p class="empty-text">Nenhuma atividade registrada.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  </div> <!-- End Right Column -->
 
 </div>
 {% endblock %}

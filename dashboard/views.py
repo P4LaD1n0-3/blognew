@@ -6,12 +6,32 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
 
 from blog.models import (
     AboutPage, Author, Category, ContactSubmission,
     NewsletterSubscriber, Post, SiteSettings,
 )
 from .decorators import master_required
+from .forms import (
+    AboutPageForm, AuthorForm, CategoryForm, PostForm, SiteSettingsForm,
+)
+
+def log_dashboard_action(user, obj, action_flag, message=""):
+    try:
+        from django.contrib.admin.models import LogEntry
+        from django.contrib.contenttypes.models import ContentType
+        LogEntry.objects.log_action(
+            user_id=user.pk,
+            content_type_id=ContentType.objects.get_for_model(obj).pk,
+            object_id=obj.pk,
+            object_repr=str(obj),
+            action_flag=action_flag,
+            change_message=message
+        )
+    except Exception as e:
+        print(f"[Dashboard Log] Erro ao registrar log: {e}")
 from .forms import (
     AboutPageForm, AuthorForm, CategoryForm, PostForm, SiteSettingsForm,
 )
@@ -61,10 +81,29 @@ def index(request):
         'recent_posts': Post.objects.select_related('author', 'category').order_by('-created_at')[:6],
         'recent_contacts': ContactSubmission.objects.order_by('-submitted_at')[:5],
     }
+    
+    try:
+        from django.contrib.admin.models import LogEntry
+        context['recent_logs'] = LogEntry.objects.select_related('content_type', 'user').order_by('-action_time')[:10]
+    except Exception:
+        context['recent_logs'] = []
+        
     return render(request, 'dashboard/index.html', context)
 
 
 # ─── Posts ─────────────────────────────────────────────────────────────
+
+@csrf_exempt
+@master_required
+@require_POST
+def tinymce_upload_image(request):
+    if 'file' in request.FILES:
+        file = request.FILES['file']
+        file_name = default_storage.save(f'uploads/{file.name}', file)
+        url = default_storage.url(file_name)
+        return JsonResponse({'location': url})
+    return JsonResponse({'error': 'Nenhuma imagem enviada'}, status=400)
+
 
 @master_required
 def posts_list(request):
@@ -93,7 +132,39 @@ def posts_list(request):
         'page_obj': page_obj,
         'search_q': q,
         'status_filter': status_filter,
+        'all_authors': Author.objects.all(),
+        'all_categories': Category.objects.all(),
     })
+
+
+@master_required
+@require_POST
+def post_quick_edit(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    try:
+        data = json.loads(request.body)
+        field = data.get('field')
+        value = data.get('value')
+        
+        from django.contrib.admin.models import CHANGE
+        if field == 'status' and value in ['published', 'draft']:
+            post.status = value
+            post.save(update_fields=['status'])
+            log_dashboard_action(request.user, post, CHANGE, "Editou status rapidamente")
+        elif field == 'category':
+            cat = Category.objects.get(pk=value) if value else None
+            post.category = cat
+            post.save(update_fields=['category'])
+            log_dashboard_action(request.user, post, CHANGE, "Editou categoria rapidamente")
+        elif field == 'author':
+            auth = Author.objects.get(pk=value) if value else None
+            post.author = auth
+            post.save(update_fields=['author'])
+            log_dashboard_action(request.user, post, CHANGE, "Editou autor rapidamente")
+            
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
 
 
 @master_required
@@ -106,6 +177,10 @@ def post_create(request):
             post.set_current_language(LANG)
             post.save()
             _trigger_translation(post)
+            
+            from django.contrib.admin.models import ADDITION
+            log_dashboard_action(request.user, post, ADDITION, "Criou post")
+            
             messages.success(request, 'Post criado com sucesso.')
             return redirect('dashboard:posts_list')
     else:
@@ -124,6 +199,10 @@ def post_edit(request, pk):
         if form.is_valid():
             form.save()
             _trigger_translation(post)
+            
+            from django.contrib.admin.models import CHANGE
+            log_dashboard_action(request.user, post, CHANGE, "Editou post")
+            
             messages.success(request, 'Post atualizado com sucesso.')
             return redirect('dashboard:posts_list')
     else:
@@ -137,6 +216,10 @@ def post_edit(request, pk):
 def post_delete(request, pk):
     post = get_object_or_404(Post, pk=pk)
     title = post.safe_translation_getter('title', any_language=True) or f'Post #{pk}'
+    
+    from django.contrib.admin.models import DELETION
+    log_dashboard_action(request.user, post, DELETION, "Excluiu post")
+    
     post.delete()
     messages.success(request, f'"{title}" excluído com sucesso.')
     return redirect('dashboard:posts_list')
@@ -176,6 +259,10 @@ def author_create(request):
             author = form.save(commit=False)
             author.set_current_language(LANG)
             author.save()
+            
+            from django.contrib.admin.models import ADDITION
+            log_dashboard_action(request.user, author, ADDITION, "Criou autor")
+            
             messages.success(request, 'Autor criado com sucesso.')
             return redirect('dashboard:authors_list')
     else:
@@ -193,6 +280,10 @@ def author_edit(request, pk):
         form.language_code = LANG
         if form.is_valid():
             form.save()
+            
+            from django.contrib.admin.models import CHANGE
+            log_dashboard_action(request.user, author, CHANGE, "Editou autor")
+            
             messages.success(request, 'Autor atualizado com sucesso.')
             return redirect('dashboard:authors_list')
     else:
@@ -206,6 +297,10 @@ def author_edit(request, pk):
 def author_delete(request, pk):
     author = get_object_or_404(Author, pk=pk)
     name = author.full_name
+    
+    from django.contrib.admin.models import DELETION
+    log_dashboard_action(request.user, author, DELETION, "Excluiu autor")
+    
     author.delete()
     messages.success(request, f'"{name}" excluído com sucesso.')
     return redirect('dashboard:authors_list')
@@ -231,6 +326,10 @@ def category_create(request):
             cat.set_current_language(LANG)
             try:
                 cat.save()
+                
+                from django.contrib.admin.models import ADDITION
+                log_dashboard_action(request.user, cat, ADDITION, "Criou categoria")
+                
                 messages.success(request, 'Categoria criada com sucesso.')
                 return redirect('dashboard:categories_list')
             except Exception as e:
@@ -251,6 +350,10 @@ def category_edit(request, pk):
         if form.is_valid():
             try:
                 form.save()
+                
+                from django.contrib.admin.models import CHANGE
+                log_dashboard_action(request.user, category, CHANGE, "Editou categoria")
+                
                 messages.success(request, 'Categoria atualizada com sucesso.')
                 return redirect('dashboard:categories_list')
             except Exception as e:
@@ -267,6 +370,9 @@ def category_delete(request, pk):
     category = get_object_or_404(Category, pk=pk)
     name = category.safe_translation_getter('name', any_language=True) or f'Categoria #{pk}'
     try:
+        from django.contrib.admin.models import DELETION
+        log_dashboard_action(request.user, category, DELETION, "Excluiu categoria")
+        
         category.delete()
         messages.success(request, f'"{name}" excluída com sucesso.')
     except Exception as e:
@@ -344,11 +450,14 @@ def newsletter_list(request):
 
 @master_required
 def ai_writer(request):
+    site_settings = SiteSettings.load()
+    default_api_key = site_settings.groq_api_key or ''
+
     context = {
         'categories': Category.objects.all(),
         'authors': Author.objects.filter(is_team_member=True),
         'saved_provider': request.session.get('ai_writer_provider', 'groq_gpt_oss_120b'),
-        'saved_api_key': request.session.get('ai_writer_api_key', ''),
+        'saved_api_key': request.session.get('ai_writer_api_key') or default_api_key,
         'saved_category': request.session.get('ai_writer_category', ''),
         'saved_author': request.session.get('ai_writer_author', ''),
         'saved_prompt': request.session.get('ai_writer_prompt', ''),
@@ -421,6 +530,9 @@ def ai_generate(request):
 
         post.save()
         auto_translate_post(post)
+        
+        from django.contrib.admin.models import ADDITION
+        log_dashboard_action(request.user, post, ADDITION, "Gerou post via IA")
 
         return JsonResponse({
             'status': 'success',

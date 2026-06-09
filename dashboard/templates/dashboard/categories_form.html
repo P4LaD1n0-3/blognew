@@ -11,51 +11,52 @@
 {% block content %}
 <form method="post" enctype="multipart/form-data">
   {% csrf_token %}
-  <div class="max-w-xl mx-auto space-y-5">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-      <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">Detalhes da Categoria</h3>
-
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">
-          Nome <span class="text-red-500">*</span>
-        </label>
+  
+  <div class="dash-card">
+    <div style="padding: 24px; border-bottom: 1px solid var(--border-color);">
+      <h3 style="font-size:16px; font-weight:700; color:var(--text-heading);">Detalhes da Categoria</h3>
+    </div>
+    
+    <div style="padding: 24px;">
+      <div style="margin-bottom: 20px;">
+        <label class="field-label">Nome <span style="color:#ef4444;">*</span></label>
         {{ form.name }}
-        {% if form.name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.name.errors.0 }}</p>{% endif %}
+        {% if form.name.errors %}<p style="color:#ef4444; font-size:12px; margin-top:4px;">{{ form.name.errors.0 }}</p>{% endif %}
       </div>
 
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">Slug</label>
+      <div style="margin-bottom: 20px;">
+        <label class="field-label">Slug</label>
         {{ form.slug }}
-        <p class="text-xs text-slate-400 mt-1">Gerado automaticamente a partir do nome</p>
+        <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Gerado automaticamente a partir do nome</p>
       </div>
 
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">Cor</label>
+      <div style="margin-bottom: 20px;">
+        <label class="field-label">Cor</label>
         {{ form.color }}
-        <div id="color-preview" class="mt-2 h-6 rounded-lg transition-colors"
-             style="background:{% if category %}{{ category.color|default:'#94a3b8' }}{% else %}#94a3b8{% endif %};"></div>
+        <div id="color-preview" style="height:24px; border-radius:8px; margin-top:8px; transition:background 0.2s; background:{% if category %}{{ category.color|default:'#94a3b8' }}{% else %}#94a3b8{% endif %};"></div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1.5">Imagem</label>
+      <div style="margin-bottom: 20px;">
+        <label class="field-label">Imagem</label>
         {% if category and category.image %}
-          <img src="{{ category.image.url }}" alt="" class="w-20 h-20 rounded-xl object-cover mb-3 border border-slate-100">
+          <img src="{{ category.image.url }}" alt="" id="image-preview" style="width:80px; height:80px; border-radius:12px; object-fit:cover; margin-bottom:12px; border:1px solid var(--border-color); display:block;">
+        {% else %}
+          <img src="" alt="" id="image-preview" style="width:80px; height:80px; border-radius:12px; object-fit:cover; margin-bottom:12px; border:1px solid var(--border-color); display:none;">
         {% endif %}
         {{ form.image }}
       </div>
     </div>
-
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex gap-2">
-      <button type="submit"
-              class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
-        <i class="fas fa-save mr-1.5"></i> Salvar
+    
+    <div style="padding: 20px 24px; border-top: 1px solid var(--border-color); background:var(--bg-section-2); display:flex; gap:12px; border-radius:0 0 16px 16px;">
+      <button type="submit" class="btn-primary" style="min-width: 120px; justify-content: center;">
+        <i class="fas fa-save"></i> Salvar
       </button>
-      <a href="{% url 'dashboard:categories_list' %}"
-         class="px-4 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+      <a href="{% url 'dashboard:categories_list' %}" class="btn-secondary">
         Cancelar
       </a>
     </div>
   </div>
+
 </form>
 {% endblock %}
 
@@ -68,7 +69,7 @@ const preview = document.getElementById('color-preview');
 let slugEdited = {% if category %}true{% else %}false{% endif %};
 
 function toSlug(s) {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-');
 }
 
@@ -80,5 +81,19 @@ if (nameInput && slugInput) {
 if (colorSelect && preview) {
   colorSelect.addEventListener('change', () => { preview.style.background = colorSelect.value; });
 }
+
+// Live image preview
+const imageInput = document.getElementById('id_image');
+const imgPreview = document.getElementById('image-preview');
+if (imageInput && imgPreview) {
+  imageInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      imgPreview.src = URL.createObjectURL(file);
+      imgPreview.style.display = 'block';
+    }
+  });
+}
 </script>
 {% endblock %}
+

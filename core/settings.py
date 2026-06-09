@@ -184,10 +184,13 @@ TINYMCE_DEFAULT_CONFIG = {
     "toolbar":
         "undo redo | formatselect | bold italic underline | "
         "alignleft aligncenter alignright alignjustify | "
-        "bullist numlist outdent indent | link image media | removeformat | help", # ✅ A VÍRGULA AQUI É ESSENCIAL
+        "bullist numlist outdent indent | link image media | removeformat | help",
 
-    # Esta linha agora será lida corretamente, prevenindo o erro em novos posts.
     "entity_encoding": "raw",
+    "paste_data_images": True,
+    "automatic_uploads": True,
+    "images_upload_url": "/painel/posts/upload-image/",
+    "images_upload_credentials": True,
 
     "content_style": "body { font-size: 18px; line-height: 1.6; font-family: 'Inter', 'Google Sans', sans-serif; color: #333; }",
     "content_css": "default",

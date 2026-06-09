@@ -440,6 +440,29 @@
   {% endif %}
 
 </form>
+
+<!-- Modal de Confirmação de Tradução -->
+<div id="translate-modal" class="fixed inset-0 z-[100] hidden items-center justify-center" style="opacity: 0; transition: opacity 0.2s ease-in-out;">
+  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeTranslateModal()"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-95" id="translate-modal-content" style="transition: transform 0.2s ease-out;">
+    <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+      <i class="fas fa-language text-xl"></i>
+    </div>
+    <h3 class="text-lg font-bold text-slate-900 text-center mb-2">Confirmar Tradução</h3>
+    <p class="text-sm text-slate-500 text-center mb-6">
+      O sistema irá traduzir este artigo para <strong>Inglês, Espanhol e Francês</strong> em segundo plano. Esse processo leva cerca de 1 a 3 minutos. Deseja continuar?
+    </p>
+    <div class="flex gap-3 w-full">
+      <button type="button" onclick="closeTranslateModal()" class="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-colors">
+        Cancelar
+      </button>
+      <button type="button" id="confirm-translate-btn" class="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-sm shadow-blue-600/30 transition-colors flex justify-center items-center gap-2">
+        <i class="fas fa-check"></i> Traduzir
+      </button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_scripts %}
@@ -484,14 +507,14 @@ function getCsrf() {
   return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 function getTinyContent() {
-  if (typeof tinymce !== 'undefined' && tinymce.editors.length)
-    return tinymce.editors[0].getContent();
+  if (typeof tinymce !== 'undefined' && tinymce.editors && Object.keys(tinymce.editors).length > 0)
+    return tinymce.activeEditor.getContent();
   const ta = document.querySelector('textarea[name="content"]');
   return ta ? ta.value : '';
 }
 function setTinyContent(html) {
-  if (typeof tinymce !== 'undefined' && tinymce.editors.length) {
-    tinymce.editors[0].setContent(html); return;
+  if (typeof tinymce !== 'undefined' && tinymce.editors && Object.keys(tinymce.editors).length > 0) {
+    tinymce.activeEditor.setContent(html); return;
   }
   const ta = document.querySelector('textarea[name="content"]');
   if (ta) ta.value = html;
@@ -521,25 +544,53 @@ const btnFmt = document.getElementById('btn-ai-format');
 if (btnFmt) btnFmt.addEventListener('click', function() {
   const c = getTinyContent();
   if (!c.trim()) { setStatus('Conteúdo vazio.', '#dc2626'); return; }
+  setStatus('⟳ Formatando texto inteligente! Aguarde...', '#3b82f6');
   aiPost('{% url "dashboard:ai_format" %}',
     { content: c, title: titleInput?.value || '' },
     d => {
-      if (d.status === 'success') { setTinyContent(d.html); setStatus('✓ Tema: ' + d.theme, '#059669'); }
+      if (d.status === 'success') { setTinyContent(d.html); setStatus('✓ Formatação concluída! Tema: ' + d.theme, '#059669'); }
       else setStatus('✗ ' + (d.error || 'Erro'), '#dc2626');
     }, this);
 });
 
 {% if post %}
-// Translate
+// Translate Modal Logic
+const translateModal = document.getElementById('translate-modal');
+const translateModalContent = document.getElementById('translate-modal-content');
+
+function openTranslateModal() {
+  translateModal.classList.remove('hidden');
+  translateModal.classList.add('flex');
+  setTimeout(() => {
+    translateModal.style.opacity = '1';
+    translateModalContent.style.transform = 'scale(1)';
+  }, 10);
+}
+
+function closeTranslateModal() {
+  translateModal.style.opacity = '0';
+  translateModalContent.style.transform = 'scale(0.95)';
+  setTimeout(() => {
+    translateModal.classList.add('hidden');
+    translateModal.classList.remove('flex');
+  }, 200);
+}
+
 const btnTrans = document.getElementById('btn-ai-translate');
 if (btnTrans) btnTrans.addEventListener('click', function() {
-  if (!confirm('Traduzir para EN, ES e FR em segundo plano (1-3 min)?')) return;
+  openTranslateModal();
+});
+
+const confirmTransBtn = document.getElementById('confirm-translate-btn');
+if (confirmTransBtn) confirmTransBtn.addEventListener('click', function() {
+  closeTranslateModal();
+  setStatus('⟳ Iniciando tradução...', '#3b82f6');
   aiPost('{% url "dashboard:ai_translate" post_id=post.pk %}',
     { post_id: '{{ post.pk }}' },
     d => {
-      if (d.status === 'started') setStatus('⟳ ' + (d.message || 'Tradução em andamento...'), '#3b82f6');
+      if (d.status === 'started') setStatus('⟳ Tradução iniciada em segundo plano! Aguarde 1–3 minutos e recarregue a página para ver o resultado.', '#3b82f6');
       else setStatus('✗ ' + (d.error || 'Erro'), '#dc2626');
-    }, this);
+    }, btnTrans);
 });
 
 // SEO
@@ -548,6 +599,7 @@ if (btnSEO) btnSEO.addEventListener('click', function() {
   const title = titleInput?.value || '';
   const content = getTinyContent();
   if (!title && !content) { setStatus('Preencha título ou conteúdo.', '#dc2626'); return; }
+  setStatus('⟳ Gerando SEO inteligente! Aguarde...', '#3b82f6');
   aiPost('{% url "dashboard:ai_seo" post_id=post.pk %}',
     { title, content },
     d => {
@@ -558,7 +610,7 @@ if (btnSEO) btnSEO.addEventListener('click', function() {
         // Open SEO panel
         const body = document.getElementById('seo-body');
         if (body && body.classList.contains('hidden')) toggleSEO();
-        setStatus('✓ SEO gerado!', '#059669');
+        setStatus('✓ SEO gerado com sucesso e aplicado abaixo!', '#059669');
       } else setStatus('✗ ' + (d.error || 'Erro'), '#dc2626');
     }, this);
 });

@@ -4,7 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex">
-  <title>Login — Painel Master</title>
+  <title>Login — {{ site_settings.site_name|default:"Painel Master" }}</title>
+
+  {% if site_settings and site_settings.favicon %}
+    <link rel="icon" href="{{ site_settings.favicon.url }}">
+    <link rel="shortcut icon" href="{{ site_settings.favicon.url }}">
+    <link rel="apple-touch-icon" href="{{ site_settings.favicon.url }}">
+  {% endif %}
+
+  <script>
+    const _warn = console.warn;
+    console.warn = function(...args) {
+      if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used in production')) return;
+      _warn.apply(console, args);
+    };
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>

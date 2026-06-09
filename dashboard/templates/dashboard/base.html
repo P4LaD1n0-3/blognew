@@ -5,7 +5,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, noarchive">
-  <title>{% block title %}Painel{% endblock %} — Painel Master</title>
+  <title>{% block title %}Painel{% endblock %} — {{ site_settings.site_name|default:"Painel Master" }}</title>
+
+  {% if site_settings and site_settings.favicon %}
+    <link rel="icon" href="{{ site_settings.favicon.url }}">
+    <link rel="shortcut icon" href="{{ site_settings.favicon.url }}">
+    <link rel="apple-touch-icon" href="{{ site_settings.favicon.url }}">
+  {% endif %}
 
   <!-- ① Blog theme CSS variables (same palette as public blog) -->
   <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
@@ -19,6 +25,11 @@
 
   <!-- ④ Tailwind CDN (preflight disabled — we use blog base styles) -->
   <script>
+    const _warn = console.warn;
+    console.warn = function(...args) {
+      if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used in production')) return;
+      _warn.apply(console, args);
+    };
     window.tailwind = window.tailwind || {};
     tailwind.config = { corePlugins: { preflight: false } };
   </script>
@@ -147,9 +158,8 @@
       gap: 6px;
       font-size: 13px;
       color: var(--text-secondary, #718096);
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .dash-breadcrumb a {
       color: var(--text-secondary);
@@ -163,8 +173,6 @@
       font-weight: 700;
       color: var(--text-heading, #1a202c);
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     /* Right topbar items */
@@ -196,6 +204,55 @@
       color: var(--text-heading);
     }
     .topbar-btn.danger:hover { color: #dc2626; background: #fef2f2; }
+
+    /* Global Search */
+    .global-search-form { display: none; margin: 0 16px; flex: 1; max-width: 400px; }
+    @media(min-width: 768px) { .global-search-form { display: block; } }
+    .search-input-group {
+      display: flex;
+      align-items: center;
+      background: var(--bg-section-2);
+      border: 1px solid var(--border-color);
+      border-radius: 99px;
+      height: 36px;
+      overflow: hidden;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .search-input-group:focus-within {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 20%, transparent);
+    }
+    .search-select {
+      background: transparent;
+      border: none;
+      padding: 0 8px 0 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .search-divider { width: 1px; height: 18px; background: var(--border-color); margin: 0 4px; }
+    .search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 0 10px;
+      font-size: 13px;
+      color: var(--text-primary);
+      outline: none;
+      font-family: inherit;
+    }
+    .search-btn {
+      background: transparent;
+      border: none;
+      padding: 0 14px 0 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color .15s;
+    }
+    .search-btn:hover { color: var(--color-accent); }
 
     /* Theme switcher in topbar */
     .theme-switcher { position: relative; }
@@ -270,7 +327,8 @@
     .dash-sidebar {
       width: var(--dash-sidebar-w);
       flex-shrink: 0;
-      background: var(--dash-bg-1);
+      background: var(--bg-section-1);
+      border-right: 1px solid var(--border-color);
       position: sticky;
       top: var(--dash-header-h);
       height: calc(100vh - var(--dash-header-h));
@@ -304,7 +362,7 @@
       padding: 8px 10px 8px 12px;
       border-radius: 8px;
       font-size: 13px;
-      color: #94a3b8;
+      color: var(--text-primary);
       text-decoration: none;
       white-space: nowrap;
       overflow: hidden;
@@ -312,18 +370,17 @@
       position: relative;
       border-left: 3px solid transparent;
     }
-    .dash-nav-link:hover { background: rgba(255,255,255,.07); color: #e2e8f0; border-left-color: rgba(255,255,255,.15); }
+    .dash-nav-link:hover { background: var(--bg-section-2); color: var(--text-heading); border-left-color: var(--border-color); }
 
-    /* Active state: solid background (matches button) + white text */
+    /* Active state: faint accent background + strong text */
     .dash-nav-link.active {
-      background: var(--color-accent, #4f46e5);
-      color: #ffffff;
+      background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+      color: var(--text-heading);
       border-left-color: transparent;
-      font-weight: 600;
-      box-shadow: 0 2px 8px color-mix(in srgb, var(--color-accent) 40%, transparent);
+      font-weight: 700;
     }
     .dash-nav-link.active i {
-      color: #ffffff;
+      color: var(--color-accent);
     }
 
     .dash-nav-link i { flex-shrink: 0; width: 16px; text-align: center; font-size: 12px; transition: color .15s; }
@@ -337,7 +394,7 @@
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: .08em;
-      color: rgba(255, 255, 255, 0.45);
+      color: var(--text-secondary);
       font-weight: 700;
       white-space: nowrap;
       overflow: hidden;
@@ -348,18 +405,17 @@
     /* Divider before blog links */
     .sidebar-divider {
       height: 1px;
-      background: rgba(255,255,255,.06);
+      background: var(--border-color);
       margin: 8px 12px;
       flex-shrink: 0;
     }
 
     /* Blog access links - special accent styling */
     .dash-nav-link.blog-link {
-      color: var(--color-accent, #a5b4fc);
-      opacity: .8;
+      color: var(--text-primary);
     }
-    .dash-nav-link.blog-link:hover { opacity: 1; background: rgba(255,255,255,.06); border-left-color: var(--color-accent); }
-    .dash-nav-link.blog-link i { color: var(--color-accent, #a5b4fc); }
+    .dash-nav-link.blog-link:hover { background: var(--bg-section-2); border-left-color: var(--border-color); }
+    .dash-nav-link.blog-link i { color: var(--text-secondary); }
 
     /* Tooltip in collapsed mode */
     body.sidebar-collapsed .dash-nav-link {
@@ -380,12 +436,13 @@
       content: attr(data-label);
       position: absolute;
       left: calc(var(--dash-sidebar-icon-w) + 8px);
-      background: var(--dash-bg-2);
-      color: #e2e8f0;
+      background: var(--bg-section-1);
+      color: var(--text-heading);
       font-size: 12px;
+      font-weight: 600;
       padding: 5px 12px;
       border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.1);
+      border: 1px solid var(--border-color);
       white-space: nowrap;
       pointer-events: none;
       opacity: 0;
@@ -398,7 +455,7 @@
     /* Sidebar footer */
     .sidebar-footer {
       padding: 12px 10px;
-      border-top: 1px solid rgba(255,255,255,.06);
+      border-top: 1px solid var(--border-color);
       overflow: hidden;
       flex-shrink: 0;
     }
@@ -604,6 +661,26 @@
     <span class="dash-page-title">{% block page_heading %}{% endblock %}</span>
   </div>
 
+  <div style="flex:1;"></div>
+
+  <!-- Global Search -->
+  <form id="global-search-form" class="global-search-form" onsubmit="handleGlobalSearch(event)">
+    <div class="search-input-group">
+      <select id="global-search-type" class="search-select">
+        <option value="posts">Posts</option>
+        <option value="authors">Autores</option>
+        <option value="categories">Categorias</option>
+      </select>
+      <div class="search-divider"></div>
+      <input type="text" id="global-search-input" class="search-input" placeholder="Buscar..." required>
+      <button type="submit" class="search-btn">
+        <i class="fas fa-search"></i>
+      </button>
+    </div>
+  </form>
+
+  <div style="flex:1;"></div>
+
   <!-- Right side -->
   <div class="topbar-right">
     {% block topbar_actions %}{% endblock %}
@@ -654,7 +731,7 @@
       <a href="{% url 'dashboard:index' %}"
          class="dash-nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
          data-label="Dashboard">
-        <i class="fas fa-gauge-high"></i>
+        <i class="fas fa-chart-pie"></i>
         <span class="dash-nav-label">Dashboard</span>
       </a>
 
@@ -865,6 +942,20 @@ document.addEventListener('DOMContentLoaded', () => {
   updateThemeUI(cur);
   buildThemeDropdown();
 });
+
+
+/* ── Global Search ─────────────────────────────────────────────── */
+function handleGlobalSearch(e) {
+  e.preventDefault();
+  var type = document.getElementById('global-search-type').value;
+  var q = document.getElementById('global-search-input').value.trim();
+  if (!q) return;
+  var baseUrl = '';
+  if (type === 'posts') baseUrl = '{% url "dashboard:posts_list" %}';
+  else if (type === 'authors') baseUrl = '{% url "dashboard:authors_list" %}';
+  else if (type === 'categories') baseUrl = '{% url "dashboard:categories_list" %}';
+  window.location.href = baseUrl + '?q=' + encodeURIComponent(q);
+}
 </script>
 
 {% block extra_scripts %}{% endblock %}

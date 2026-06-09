@@ -6,125 +6,173 @@
 {% block content %}
 <form method="post" enctype="multipart/form-data">
   {% csrf_token %}
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+  
+  <style>
+    .form-grid-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media(min-width: 1280px) { .form-grid-layout { grid-template-columns: 2fr 1fr; } }
+    
+    .img-preview {
+      display: block;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      object-fit: contain;
+      background: var(--bg-section-2);
+      margin-bottom: 12px;
+    }
+  </style>
+
+  <div class="form-grid-layout">
     <!-- Left -->
-    <div class="xl:col-span-2 space-y-5">
+    <div style="display:flex; flex-direction:column; gap:20px;">
 
       <!-- Branding -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">
-          <i class="fas fa-palette text-slate-400 mr-1.5"></i> Identidade Visual
-        </h3>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-slate-700 mb-1.5">Nome do Site</label>
-          {{ form.site_name }}
-          {% if form.site_name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.site_name.errors.0 }}</p>{% endif %}
+      <div class="dash-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size:16px; font-weight:700; color:var(--text-heading);">
+            <i class="fas fa-palette" style="color:var(--text-secondary); margin-right:6px;"></i> Identidade Visual
+          </h3>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Logo</label>
-            {% if instance.logo %}
-              <img src="{{ instance.logo.url }}" alt="Logo" class="h-12 mb-2 rounded-lg border border-slate-100 object-contain bg-slate-50 px-2">
-            {% endif %}
-            {{ form.logo }}
+        <div style="padding: 24px;">
+          <div style="margin-bottom: 20px;">
+            <label class="field-label">Nome do Site</label>
+            {{ form.site_name }}
+            {% if form.site_name.errors %}<p style="color:#ef4444; font-size:12px; margin-top:4px;">{{ form.site_name.errors.0 }}</p>{% endif %}
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Favicon</label>
-            {% if instance.favicon %}
-              <img src="{{ instance.favicon.url }}" alt="Favicon" class="w-10 h-10 mb-2 rounded-lg border border-slate-100 object-contain">
-            {% endif %}
-            {{ form.favicon }}
-          </div>
-        </div>
 
-        <div class="flex items-center gap-3">
-          {{ form.show_name_with_logo }}
-          <label class="text-sm text-slate-700">Exibir nome do site junto ao logo</label>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom: 20px;">
+            <div>
+              <label class="field-label">Logo</label>
+              {% if instance.logo %}
+                <img src="{{ instance.logo.url }}" alt="Logo" class="img-preview" id="logo-preview" style="height: 60px; padding: 4px;">
+              {% else %}
+                <img src="" alt="Logo Preview" class="img-preview" id="logo-preview" style="height: 60px; padding: 4px; display: none;">
+              {% endif %}
+              {{ form.logo }}
+            </div>
+            <div>
+              <label class="field-label">Favicon</label>
+              {% if instance.favicon %}
+                <img src="{{ instance.favicon.url }}" alt="Favicon" class="img-preview" id="favicon-preview" style="width: 48px; height: 48px;">
+              {% else %}
+                <img src="" alt="Favicon Preview" class="img-preview" id="favicon-preview" style="width: 48px; height: 48px; display: none;">
+              {% endif %}
+              {{ form.favicon }}
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:12px;">
+            {{ form.show_name_with_logo }}
+            <label class="field-label" style="margin-bottom:0;">Exibir nome do site junto ao logo</label>
+          </div>
         </div>
       </div>
 
       <!-- Social -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">
-          <i class="fas fa-share-nodes text-slate-400 mr-1.5"></i> Redes Sociais
-        </h3>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">
-              <i class="fab fa-instagram text-pink-500 mr-1"></i> Instagram
-            </label>
-            {{ form.instagram_url }}
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">
-              <i class="fab fa-linkedin text-blue-600 mr-1"></i> LinkedIn
-            </label>
-            {{ form.linkedin_url }}
-          </div>
+      <div class="dash-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size:16px; font-weight:700; color:var(--text-heading);">
+            <i class="fas fa-share-nodes" style="color:var(--text-secondary); margin-right:6px;"></i> Redes Sociais
+          </h3>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1.5">
-            <i class="fab fa-whatsapp text-green-500 mr-1"></i> WhatsApp
-          </label>
-          {{ form.whatsapp_number }}
-          <p class="text-xs text-slate-400 mt-1">Apenas números, com DDI. Ex: 5511999999999</p>
+        <div style="padding: 24px;">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom: 20px;">
+            <div>
+              <label class="field-label"><i class="fab fa-instagram" style="color:#ec4899; margin-right:4px;"></i> Instagram</label>
+              {{ form.instagram_url }}
+            </div>
+            <div>
+              <label class="field-label"><i class="fab fa-linkedin" style="color:#2563eb; margin-right:4px;"></i> LinkedIn</label>
+              {{ form.linkedin_url }}
+            </div>
+          </div>
+
+          <div>
+            <label class="field-label"><i class="fab fa-whatsapp" style="color:#22c55e; margin-right:4px;"></i> WhatsApp</label>
+            {{ form.whatsapp_number }}
+            <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Apenas números, com DDI. Ex: 5511999999999</p>
+          </div>
         </div>
       </div>
 
       <!-- General -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <h3 class="text-sm font-semibold text-slate-700 mb-4 pb-3 border-b border-slate-100">
-          <i class="fas fa-cog text-slate-400 mr-1.5"></i> Geral
-        </h3>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1.5">Posts na grade da Home</label>
+      <div class="dash-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size:16px; font-weight:700; color:var(--text-heading);">
+            <i class="fas fa-cog" style="color:var(--text-secondary); margin-right:6px;"></i> Geral
+          </h3>
+        </div>
+        <div style="padding: 24px;">
+          <label class="field-label">Posts na grade da Home</label>
           {{ form.posts_in_home_grid }}
-          <p class="text-xs text-slate-400 mt-1">Número de posts (excluindo destaque) na seção de artigos recentes</p>
+          <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Número de posts (excluindo destaque) na seção de artigos recentes</p>
         </div>
       </div>
     </div>
 
     <!-- Right -->
-    <div class="space-y-5">
+    <div style="display:flex; flex-direction:column; gap:20px;">
       <!-- AI -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <h3 class="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
-          <i class="fas fa-brain text-violet-500"></i> Chave API Groq
-        </h3>
-        <p class="text-xs text-slate-400 mb-4">Ativa tradução automática e funções de IA</p>
+      <div class="dash-card">
+        <div style="padding: 24px; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size:16px; font-weight:700; color:var(--text-heading); display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-brain" style="color:#8b5cf6;"></i> Chave API Groq
+          </h3>
+        </div>
+        <div style="padding: 24px;">
+          <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">Ativa tradução automática e funções de IA</p>
 
-        {% if instance.groq_api_key %}
-          <div class="bg-green-50 border border-green-200 rounded-xl px-3 py-2.5 flex items-center gap-2 mb-3">
-            <i class="fas fa-circle-check text-green-500 text-sm"></i>
-            <span class="text-xs text-green-700 font-medium">Chave configurada</span>
-          </div>
-        {% else %}
-          <div class="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-center gap-2 mb-3">
-            <i class="fas fa-triangle-exclamation text-amber-500 text-sm"></i>
-            <span class="text-xs text-amber-700 font-medium">Sem chave configurada</span>
-          </div>
-        {% endif %}
+          {% if instance.groq_api_key %}
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:10px 12px; display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+              <i class="fas fa-circle-check" style="color:#22c55e; font-size:14px;"></i>
+              <span style="font-size:12px; color:#15803d; font-weight:600;">Chave configurada</span>
+            </div>
+          {% else %}
+            <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:10px 12px; display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+              <i class="fas fa-triangle-exclamation" style="color:#f59e0b; font-size:14px;"></i>
+              <span style="font-size:12px; color:#b45309; font-weight:600;">Sem chave configurada</span>
+            </div>
+          {% endif %}
 
-        {{ form.groq_api_key }}
-        <div class="mt-3">
-          <a href="{% url 'dashboard:ai_settings' %}" class="text-xs text-indigo-600 hover:text-indigo-800">
-            <i class="fas fa-gear mr-1"></i> Gerenciar IA completo
-          </a>
+          {{ form.groq_api_key }}
+          <div style="margin-top:12px;">
+            <a href="{% url 'dashboard:ai_settings' %}" style="font-size:12px; color:var(--color-accent); text-decoration:none;">
+              <i class="fas fa-gear" style="margin-right:4px;"></i> Gerenciar IA completo
+            </a>
+          </div>
         </div>
       </div>
 
       <!-- Save -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <button type="submit"
-                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm">
-          <i class="fas fa-save mr-1.5"></i> Salvar Configurações
+      <div class="dash-card" style="padding: 24px; background:var(--bg-section-2);">
+        <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+          <i class="fas fa-save" style="margin-right:6px;"></i> Salvar Configurações
         </button>
       </div>
     </div>
   </div>
 </form>
+
+<script>
+  // Live image preview logic
+  function setupPreview(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    if (!input || !preview) return;
+
+    input.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+      }
+    });
+  }
+
+  // Find the file inputs generated by Django
+  // Django's ClearableFileInput uses names like 'logo', so IDs are 'id_logo'
+  setupPreview('id_logo', 'logo-preview');
+  setupPreview('id_favicon', 'favicon-preview');
+</script>
 {% endblock %}

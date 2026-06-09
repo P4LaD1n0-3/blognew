@@ -10,7 +10,9 @@ urlpatterns = [
 
     path('posts/', views.posts_list, name='posts_list'),
     path('posts/criar/', views.post_create, name='post_create'),
+    path('posts/upload-image/', views.tinymce_upload_image, name='tinymce_upload_image'),
     path('posts/<int:pk>/editar/', views.post_edit, name='post_edit'),
+    path('posts/<int:pk>/quick-edit/', views.post_quick_edit, name='post_quick_edit'),
     path('posts/<int:pk>/excluir/', views.post_delete, name='post_delete'),
     path('posts/ordenar/', views.posts_reorder, name='posts_reorder'),
 

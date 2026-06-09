@@ -174,31 +174,35 @@
               {% endif %}
             </td>
             <td class="px-3 py-3 max-w-xs">
-              <p class="text-sm font-medium text-slate-900 truncate">
+              <a href="{% url 'dashboard:post_edit' post.pk %}" class="text-sm font-medium text-slate-900 truncate hover:text-indigo-600 transition-colors block">
                 {{ post|default:'(sem título)' }}
-              </p>
+              </a>
             </td>
             <td class="px-3 py-3 hidden md:table-cell">
-              <span class="text-sm text-slate-500">{{ post.author|default:'—' }}</span>
+              <select data-field="author" onchange="quickEdit({{ post.pk }}, 'author', this.value)"
+                      class="text-sm text-slate-500 bg-transparent border-none appearance-none hover:bg-slate-100 rounded px-1 -mx-1 cursor-pointer focus:ring-0 outline-none">
+                <option value="">—</option>
+                {% for a in all_authors %}
+                <option value="{{ a.pk }}" {% if post.author_id == a.pk %}selected{% endif %}>{{ a.full_name }}</option>
+                {% endfor %}
+              </select>
             </td>
             <td class="px-3 py-3 hidden lg:table-cell">
-              {% if post.category %}
-                <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-700">
-                  {% if post.category.color %}
-                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:{{ post.category.color }};"></span>
-                  {% endif %}
-                  {{ post.category }}
-                </span>
-              {% else %}
-                <span class="text-slate-400 text-sm">—</span>
-              {% endif %}
+              <select data-field="category" onchange="quickEdit({{ post.pk }}, 'category', this.value)"
+                      class="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-700 border-none appearance-none cursor-pointer focus:ring-0 outline-none hover:bg-slate-200"
+                      style="{% if post.category and post.category.color %}border-left: 4px solid {{ post.category.color }};{% endif %}">
+                <option value="">—</option>
+                {% for c in all_categories %}
+                <option value="{{ c.pk }}" {% if post.category_id == c.pk %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+              </select>
             </td>
             <td class="px-3 py-3">
-              {% if post.status == 'published' %}
-                <span class="badge-published"><i class="fas fa-circle text-xs mr-1"></i>Publicado</span>
-              {% else %}
-                <span class="badge-draft"><i class="fas fa-circle text-xs mr-1"></i>Rascunho</span>
-              {% endif %}
+              <select data-field="status" onchange="quickEdit({{ post.pk }}, 'status', this.value)"
+                      class="{% if post.status == 'published' %}badge-published{% else %}badge-draft{% endif %} border-none appearance-none cursor-pointer focus:ring-0 outline-none hover:opacity-80">
+                <option value="published" {% if post.status == 'published' %}selected{% endif %}>Publicado</option>
+                <option value="draft" {% if post.status == 'draft' %}selected{% endif %}>Rascunho</option>
+              </select>
             </td>
             <td class="px-3 py-3 hidden md:table-cell">
               <span class="text-xs text-slate-400">{{ post.created_at|date:"d/m/Y" }}</span>
@@ -321,6 +325,54 @@ function updateBulkToolbar() {
 function bulkAction(action) {
   document.getElementById('bulk-action-input').value = action;
   document.getElementById('bulk-form').submit();
+}
+
+// ── Quick Edit Inline ──────────────────────────────────────────────────
+const categoryColors = {
+  {% for c in all_categories %}
+  "{{ c.pk }}": "{{ c.color|default:'#94a3b8' }}",
+  {% endfor %}
+};
+
+function quickEdit(postId, field, value) {
+  fetch(`/painel/posts/${postId}/quick-edit/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+    },
+    body: JSON.stringify({ field: field, value: value })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      const select = document.querySelector(`tr[data-id="${postId}"] select[data-field="${field}"]`);
+      if(select) {
+        select.style.transition = 'background-color 0.3s';
+        select.style.backgroundColor = '#dcfce7'; // success feedback
+        setTimeout(() => select.style.backgroundColor = '', 1000);
+        
+        if (field === 'status') {
+           select.className = value === 'published' 
+             ? 'badge-published border-none appearance-none cursor-pointer focus:ring-0 outline-none hover:opacity-80'
+             : 'badge-draft border-none appearance-none cursor-pointer focus:ring-0 outline-none hover:opacity-80';
+        } else if (field === 'category') {
+           const newColor = categoryColors[value];
+           if (newColor) {
+               select.style.borderLeft = `4px solid ${newColor}`;
+           } else {
+               select.style.borderLeft = 'none';
+           }
+        }
+      }
+    } else {
+      alert('Erro ao atualizar: ' + data.error);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert('Erro de conexão.');
+  });
 }
 </script>
 {% endblock %}
