@@ -197,6 +197,13 @@ class Post(TranslatableModel):
     author = models.ForeignKey(Author, on_delete=models.SET_NULL, null=True, related_name='posts', verbose_name="Autor")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='posts', verbose_name="Categoria")
     thumbnail = models.ImageField(upload_to='thumbnails/', blank=True, null=True, verbose_name="Imagem de Destaque")
+    video = models.FileField(
+        upload_to='videos/',
+        blank=True,
+        null=True,
+        verbose_name="Vídeo de Destaque",
+        help_text="Suporta MP4, WebM, MOV. Exibido no lugar da imagem quando presente.",
+    )
     keywords = models.CharField(
         max_length=300, blank=True, default='',
         verbose_name="Palavras-chave",

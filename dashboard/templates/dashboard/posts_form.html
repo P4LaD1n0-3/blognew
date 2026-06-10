@@ -164,6 +164,13 @@
     align-items: start;
   }
 
+  /* Media panels (thumb + video) */
+  .media-panels {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
   /* Thumbnail panel */
   .thumb-panel {
     background: var(--bg-card-optimized);
@@ -210,6 +217,71 @@
     color: var(--text-secondary);
     font-size: 12px;
   }
+
+  /* Video panel */
+  .video-panel {
+    background: var(--bg-card-optimized);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .video-panel-header {
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-heading);
+  }
+  .video-panel-header:hover { background: var(--bg-section-2); }
+  .video-body { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .video-body.hidden { display: none; }
+  .video-preview-el {
+    width: 320px;
+    max-width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 10px;
+    background: #000;
+    display: block;
+    object-fit: cover;
+  }
+  .video-placeholder {
+    width: 320px;
+    max-width: 100%;
+    aspect-ratio: 16/9;
+    background: var(--bg-section-2);
+    border: 2px dashed var(--border-color);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+  .video-file-info {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .video-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #f3e8ff; color: #7c3aed;
+    border: 1px solid #ddd6fe;
+    border-radius: 6px; padding: 3px 9px;
+    font-size: 11px; font-weight: 700;
+  }
+  .btn-clear-video {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fee2e2; color: #dc2626;
+    border: 1px solid #fca5a5;
+    border-radius: 6px; padding: 3px 9px;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer; transition: background .15s;
+  }
+  .btn-clear-video:hover { background: #fecaca; }
   .thumb-panel input[type=file] {
     font-size: 12px;
     color: var(--text-secondary);
@@ -254,11 +326,52 @@
   .seo-char-count { font-size: 11px; color: var(--text-secondary); text-align: right; margin-top: 3px; }
 
   @media (max-width: 768px) {
-    .post-meta-bar { gap: 6px; }
-    .meta-field-group { flex-direction: column; align-items: flex-start; gap: 3px; }
+    .post-meta-bar { position: relative; top: 0; z-index: 10; gap: 12px; }
+    .meta-field-group { flex-direction: column; align-items: flex-start; gap: 4px; flex: 1; min-width: 45%; }
+    .meta-select { width: 100%; }
+    .meta-divider { display: none; }
+    .meta-actions { margin-left: 0; width: 100%; justify-content: flex-end; margin-top: 4px; }
+    .ai-toolbar { padding: 12px 24px; gap: 8px; }
+    .ai-btn { flex: 1; justify-content: center; min-width: 120px; }
     .bottom-panels { grid-template-columns: 1fr; }
     .title-input { font-size: 1.2rem; }
   }
+
+  /* ── Validação de campos obrigatórios ─────────────────────────── */
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%,60%  { transform: translateX(-5px); }
+    40%,80%  { transform: translateX(5px); }
+  }
+  .field-error {
+    border-color: #dc2626 !important;
+    background: #fef2f2 !important;
+    animation: shake .35s ease;
+  }
+  .label-error { color: #dc2626 !important; }
+  .title-input.field-error {
+    border-bottom-color: #dc2626 !important;
+    background: transparent !important;
+  }
+  .validation-toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 9px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #dc2626;
+    animation: slideDown .2s ease;
+    white-space: nowrap;
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .required-star { color: #dc2626; margin-left: 2px; font-size: 11px; }
 </style>
 {% endblock %}
 
@@ -282,8 +395,8 @@
 
     <!-- Author -->
     <div class="meta-field-group">
-      <span class="meta-field-label">Autor</span>
-      <select name="author" class="meta-select">
+      <span class="meta-field-label" id="label-author">Autor <span class="required-star">*</span></span>
+      <select name="author" id="id_author" class="meta-select">
         <option value="">---------</option>
         {% for author in form.author.field.queryset %}
           <option value="{{ author.pk }}" {% if form.author.value|stringformat:"s" == author.pk|stringformat:"s" %}selected{% endif %}>
@@ -297,8 +410,8 @@
 
     <!-- Category -->
     <div class="meta-field-group">
-      <span class="meta-field-label">Categoria *</span>
-      <select name="category" class="meta-select">
+      <span class="meta-field-label" id="label-category">Categoria <span class="required-star">*</span></span>
+      <select name="category" id="id_category" class="meta-select">
         <option value="">---------</option>
         {% for cat in form.category.field.queryset %}
           <option value="{{ cat.pk }}" {% if form.category.value|stringformat:"s" == cat.pk|stringformat:"s" %}selected{% endif %}>
@@ -329,6 +442,25 @@
     <div class="ai-badge">
       <i class="fas fa-robot" style="color:var(--color-accent);font-size:13px;"></i> IA Admin
     </div>
+    <select id="ai-format-model"
+            style="border:1px solid var(--border-color);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:600;font-family:inherit;background:var(--bg-section-2);color:var(--text-primary);cursor:pointer;outline:none;">
+      <optgroup label="Meta">
+        <option value="llama-3.3-70b-versatile">⭐ Llama 3.3 70B</option>
+        <option value="llama-3.1-8b-instant">⚡ Llama 3.1 8B Instant</option>
+        <option value="meta-llama/llama-4-scout-17b-16e-instruct">🦙 Llama 4 Scout 17B</option>
+      </optgroup>
+      <optgroup label="OpenAI (via Groq)">
+        <option value="openai/gpt-oss-120b">🧠 GPT-OSS 120B</option>
+        <option value="openai/gpt-oss-20b">💡 GPT-OSS 20B</option>
+      </optgroup>
+      <optgroup label="Groq">
+        <option value="groq/compound">🔵 Groq Compound</option>
+        <option value="groq/compound-mini">🔹 Groq Compound Mini</option>
+      </optgroup>
+      <optgroup label="Alibaba / Google">
+        <option value="qwen/qwen3-32b">🌐 Qwen 3 32B</option>
+      </optgroup>
+    </select>
     <button type="button" id="btn-ai-format" class="ai-btn"
             style="background:#059669;color:#fff;">
       <i class="fas fa-magic"></i> Formatar
@@ -344,7 +476,7 @@
     </button>
     {% endif %}
     <span id="ai-status" class="ai-status"></span>
-    <a href="{% url 'dashboard:ai_settings' %}" style="margin-left:auto;font-size:11px;color:var(--text-secondary);text-decoration:none;">
+    <a href="{% url 'dashboard:ai_writer' %}" style="margin-left:auto;font-size:11px;color:var(--text-secondary);text-decoration:none;">
       <i class="fas fa-gear"></i> Config IA
     </a>
   </div>
@@ -385,27 +517,73 @@
 
   </div>
 
-  <!-- ④ BOTTOM: Thumbnail + SEO ──────────────────────────────────── -->
+  <!-- ④ BOTTOM: Media + SEO ──────────────────────────────────── -->
   <div class="bottom-panels">
 
-    <!-- Thumbnail -->
-    <div class="thumb-panel">
-      <div class="thumb-panel-header" onclick="toggleThumb()">
-        <span><i class="fas fa-image" style="margin-right:8px;color:var(--color-accent);"></i>Imagem de Destaque</span>
-        <i class="fas fa-chevron-down" id="thumb-caret" style="font-size:11px;color:var(--text-secondary);transition:transform .2s;"></i>
+    <!-- Media panels (image + video) -->
+    <div class="media-panels">
+
+      <!-- Thumbnail -->
+      <div class="thumb-panel">
+        <div class="thumb-panel-header" onclick="toggleThumb()">
+          <span><i class="fas fa-image" style="margin-right:8px;color:var(--color-accent);"></i>Imagem de Destaque</span>
+          <i class="fas fa-chevron-down" id="thumb-caret" style="font-size:11px;color:var(--text-secondary);transition:transform .2s;"></i>
+        </div>
+        <div class="thumb-body" id="thumb-body">
+          {% if post and post.thumbnail %}
+            <img src="{{ post.thumbnail.url }}" alt="" class="thumb-preview" id="thumb-img-preview">
+          {% else %}
+            <div class="thumb-placeholder" id="thumb-placeholder">
+              <i class="fas fa-image" style="font-size:28px;opacity:.3;"></i>
+              <span>Nenhuma imagem</span>
+            </div>
+            <img src="" alt="" class="thumb-preview" id="thumb-img-preview" style="display:none;">
+          {% endif %}
+          {{ form.thumbnail }}
+        </div>
       </div>
-      <div class="thumb-body" id="thumb-body">
-        {% if post and post.thumbnail %}
-          <img src="{{ post.thumbnail.url }}" alt="" class="thumb-preview">
-        {% else %}
-          <div class="thumb-placeholder">
-            <i class="fas fa-image" style="font-size:28px;opacity:.3;"></i>
-            <span>Nenhuma imagem</span>
-          </div>
-        {% endif %}
-        {{ form.thumbnail }}
+
+      <!-- Video -->
+      <div class="video-panel">
+        <div class="video-panel-header" onclick="toggleVideo()">
+          <span><i class="fas fa-film" style="margin-right:8px;color:#8b5cf6;"></i>Vídeo de Destaque</span>
+          <i class="fas fa-chevron-down" id="video-caret" style="font-size:11px;color:var(--text-secondary);transition:transform .2s;"></i>
+        </div>
+        <div class="video-body hidden" id="video-body">
+          {% if post and post.video %}
+            <video class="video-preview-el" controls id="video-preview">
+              <source src="{{ post.video.url }}">
+            </video>
+            <div class="video-file-info">
+              <span class="video-badge"><i class="fas fa-film"></i> Vídeo atual</span>
+              <label class="btn-clear-video" for="video-clear_id" id="video-clear-btn">
+                <i class="fas fa-trash-can"></i> Remover
+              </label>
+            </div>
+          {% else %}
+            <div class="video-placeholder" id="video-placeholder">
+              <i class="fas fa-film" style="font-size:28px;opacity:.3;"></i>
+              <span>Nenhum vídeo</span>
+              <span style="font-size:11px;opacity:.6;">MP4, WebM, MOV</span>
+            </div>
+            <video class="video-preview-el" controls id="video-preview" style="display:none;">
+              <source src="" id="video-preview-src">
+            </video>
+          {% endif %}
+          <!-- Django widget (hidden label, rendered for form submission) -->
+          <div style="display:none;">{{ form.video }}</div>
+          <label for="id_video"
+                 style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#8b5cf6;color:#fff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;">
+            <i class="fas fa-arrow-up-from-bracket"></i>
+            {% if post and post.video %}Substituir vídeo{% else %}Escolher vídeo{% endif %}
+          </label>
+          <span style="font-size:12px;color:var(--text-secondary);" id="video-fname">
+            {% if post and post.video %}{{ post.video.name|slice:"7:" }}{% else %}Nenhum arquivo selecionado{% endif %}
+          </span>
+        </div>
       </div>
-    </div>
+
+    </div>{# end .media-panels #}
 
     <!-- SEO -->
     <div class="seo-panel">
@@ -519,6 +697,50 @@ function toggleThumb() {
   caret.style.transform = open ? 'rotate(-90deg)' : 'rotate(0)';
 }
 
+// ── Video panel toggle & live preview ────────────────────────────
+function toggleVideo() {
+  const body  = document.getElementById('video-body');
+  const caret = document.getElementById('video-caret');
+  const open  = !body.classList.contains('hidden');
+  body.classList.toggle('hidden', open);
+  caret.style.transform = open ? 'rotate(-90deg)' : 'rotate(0)';
+}
+
+(function () {
+  const videoInput = document.getElementById('id_video');
+  if (!videoInput) return;
+  videoInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const placeholder = document.getElementById('video-placeholder');
+    const preview     = document.getElementById('video-preview');
+    const fname       = document.getElementById('video-fname');
+    if (placeholder) placeholder.style.display = 'none';
+    if (preview) {
+      const src = document.getElementById('video-preview-src') || preview.querySelector('source');
+      if (src) { src.src = URL.createObjectURL(file); preview.load(); }
+      else {
+        preview.src = URL.createObjectURL(file);
+      }
+      preview.style.display = 'block';
+    }
+    if (fname) fname.textContent = file.name;
+  });
+
+  // Live thumbnail preview
+  const thumbInput = document.getElementById('id_thumbnail');
+  if (thumbInput) {
+    thumbInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      const preview = document.getElementById('thumb-img-preview');
+      const placeholder = document.getElementById('thumb-placeholder');
+      if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+      if (placeholder) placeholder.style.display = 'none';
+    });
+  }
+})();
+
 // ── Char count helpers ───────────────────────────────────────────
 function updateCharCount(inputId, countId, max) {
   const el = document.getElementById(inputId);
@@ -534,17 +756,48 @@ function getCsrf() {
   return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 function getTinyContent() {
-  if (typeof tinymce !== 'undefined' && tinymce.editors && Object.keys(tinymce.editors).length > 0)
-    return tinymce.activeEditor.getContent();
+  if (typeof tinymce !== 'undefined' && tinymce.editors && Object.keys(tinymce.editors).length > 0) {
+    const ed = tinymce.activeEditor || Object.values(tinymce.editors)[0] || tinymce.editors[0];
+    if (ed) {
+      try { return ed.getContent(); }
+      catch (e) { console.warn('TinyMCE get fail', e); if (ed.getBody) return ed.getBody().innerHTML; }
+    }
+  }
   const ta = document.querySelector('textarea[name="content"]');
   return ta ? ta.value : '';
 }
 function setTinyContent(html) {
-  if (typeof tinymce !== 'undefined' && tinymce.editors && Object.keys(tinymce.editors).length > 0) {
-    tinymce.activeEditor.setContent(html); return;
-  }
+  console.log('[IA Format] setTinyContent chamado. HTML length:', html?.length);
   const ta = document.querySelector('textarea[name="content"]');
-  if (ta) ta.value = html;
+  if (typeof tinymce !== 'undefined') {
+    const ed = tinymce.activeEditor ||
+               (tinymce.editors && Object.values(tinymce.editors)[0]) ||
+               (tinymce.get && tinymce.get(0));
+    console.log('[IA Format] TinyMCE editor encontrado:', !!ed, ed?.id);
+    if (ed) {
+      try {
+        // Método principal: injeção direta no body do iframe — nenhuma sanitização do TinyMCE
+        const body = ed.getBody();
+        console.log('[IA Format] getBody():', !!body);
+        if (body) {
+          body.innerHTML = html || '';
+          ed.save();
+          ed.fire('change');
+          console.log('[IA Format] ✓ Injeção direta no iframe concluída.');
+          return;
+        }
+      } catch(e) { console.warn('[IA Format] ✗ direct inject failed:', e); }
+      try {
+        ed.setContent(html || '', { format: 'raw' });
+        console.log('[IA Format] ✓ setContent(raw) concluído.');
+        return;
+      } catch(e) { console.warn('[IA Format] ✗ setContent raw failed:', e); }
+    }
+  } else {
+    console.warn('[IA Format] TinyMCE não encontrado no window.');
+  }
+  // Fallback: seta direto no textarea
+  if (ta) { ta.value = html || ''; console.log('[IA Format] ✓ Fallback textarea definido.'); }
 }
 function setStatus(msg, color) {
   const el = document.getElementById('ai-status');
@@ -571,14 +824,97 @@ const btnFmt = document.getElementById('btn-ai-format');
 if (btnFmt) btnFmt.addEventListener('click', function() {
   const c = getTinyContent();
   if (!c.trim()) { setStatus('Conteúdo vazio.', '#dc2626'); return; }
+  const formatModel = document.getElementById('ai-format-model')?.value || 'llama-3.3-70b-versatile';
   setStatus('⟳ Formatando texto inteligente! Aguarde...', '#3b82f6');
   aiPost('{% url "dashboard:ai_format" %}',
-    { content: c, title: titleInput?.value || '' },
+    { content: c, title: titleInput?.value || '', model: formatModel },
     d => {
-      if (d.status === 'success') { setTinyContent(d.html); setStatus('✓ Formatação concluída! Tema: ' + d.theme, '#059669'); }
-      else setStatus('✗ ' + (d.error || 'Erro'), '#dc2626');
+      console.log('[IA Format] Resposta do servidor:', d.status, 'tema:', d.theme, 'html length:', d.html?.length);
+      if (d.status === 'success') {
+        console.log('[IA Format] Primeiros 500 chars do HTML retornado:', d.html?.slice(0, 500));
+        setTinyContent(d.html);
+        setStatus('✓ Formatação concluída! Tema: ' + d.theme, '#059669');
+      } else {
+        console.error('[IA Format] Erro:', d.error);
+        setStatus('✗ ' + (d.error || 'Erro'), '#dc2626');
+      }
     }, this);
 });
+
+// ── Validação de campos obrigatórios ────────────────────────────
+(function() {
+  const form = document.getElementById('post-form');
+  if (!form) return;
+
+  function clearErrors() {
+    form.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+    form.querySelectorAll('.label-error').forEach(el => el.classList.remove('label-error'));
+    const toast = document.getElementById('validation-toast');
+    if (toast) toast.remove();
+  }
+
+  function showToast(missing) {
+    const metaActions = document.querySelector('.meta-actions');
+    if (!metaActions) return;
+    const toast = document.createElement('div');
+    toast.id = 'validation-toast';
+    toast.className = 'validation-toast';
+    toast.innerHTML = `<i class="fas fa-circle-exclamation"></i> Obrigatório: <strong>${missing.join(' · ')}</strong>`;
+    metaActions.insertAdjacentElement('beforebegin', toast);
+  }
+
+  form.addEventListener('submit', function(e) {
+    clearErrors();
+    const missing = [];
+
+    // Título
+    const titleEl = document.getElementById('id_title');
+    if (titleEl && !titleEl.value.trim()) {
+      titleEl.classList.add('field-error');
+      missing.push('Título');
+    }
+
+    // Autor
+    const authorEl = document.getElementById('id_author');
+    if (authorEl && !authorEl.value) {
+      authorEl.classList.add('field-error');
+      document.getElementById('label-author')?.classList.add('label-error');
+      missing.push('Autor');
+    }
+
+    // Categoria
+    const categoryEl = document.getElementById('id_category');
+    if (categoryEl && !categoryEl.value) {
+      categoryEl.classList.add('field-error');
+      document.getElementById('label-category')?.classList.add('label-error');
+      missing.push('Categoria');
+    }
+
+    if (missing.length > 0) {
+      e.preventDefault();
+      showToast(missing);
+      // Scroll para o meta bar (campos obrigatórios estão no topo)
+      document.querySelector('.post-meta-bar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+
+  // Limpa erro assim que o usuário interage com o campo
+  ['id_title', 'id_author', 'id_category'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const evt = el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(evt, function() {
+      this.classList.remove('field-error');
+      if (id === 'id_author')   document.getElementById('label-author')?.classList.remove('label-error');
+      if (id === 'id_category') document.getElementById('label-category')?.classList.remove('label-error');
+      // Remove toast se todos os campos obrigatórios estiverem preenchidos
+      const titleOk    = !!document.getElementById('id_title')?.value.trim();
+      const authorOk   = !!document.getElementById('id_author')?.value;
+      const categoryOk = !!document.getElementById('id_category')?.value;
+      if (titleOk && authorOk && categoryOk) clearErrors();
+    });
+  });
+})();
 
 {% if post %}
 // Translate Modal Logic

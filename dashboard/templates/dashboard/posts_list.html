@@ -11,8 +11,12 @@
   .posts-table-wrap table { min-width: 600px; }
 
   @media(max-width: 640px) {
-    .posts-table-wrap table { min-width: 500px; }
+    /* Tabela cabe no viewport sem scroll horizontal em 390px */
+    .posts-table-wrap table { min-width: 0; }
+    /* Esconde colunas menos essenciais em mobile */
     .col-date { display: none; }
+    .col-drag  { display: none; }
+    .col-check { display: none; }
     /* Compact toolbar on mobile */
     .posts-toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
     .posts-toolbar form { width: 100%; }
@@ -78,7 +82,8 @@
 
 {% block topbar_actions %}
 <a href="{% url 'dashboard:post_create' %}" class="btn-create-post">
-  <i class="fas fa-plus" style="font-size:11px;"></i> Novo Post
+  <i class="fas fa-plus" style="font-size:11px;"></i>
+  <span class="btn-text">Novo Post</span>
 </a>
 {% endblock %}
 
@@ -139,10 +144,10 @@
       <table style="width:100%">
         <thead>
           <tr class="bg-slate-50 text-left text-xs text-slate-500 uppercase tracking-wider">
-            <th class="px-5 py-3 w-10">
+            <th class="px-5 py-3 w-10 col-check">
               <input type="checkbox" id="select-all" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
             </th>
-            <th class="px-3 py-3 w-8"></th>
+            <th class="px-3 py-3 w-8 col-drag"></th>
             <th class="px-3 py-3 w-16">Capa</th>
             <th class="px-3 py-3">Título</th>
             <th class="px-3 py-3 hidden md:table-cell">Autor</th>
@@ -156,11 +161,11 @@
           {% for post in page_obj %}
           <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors group"
               data-id="{{ post.pk }}" data-order="{{ post.order }}">
-            <td class="px-5 py-3">
+            <td class="px-5 py-3 col-check">
               <input type="checkbox" name="selected_ids" value="{{ post.pk }}"
                      class="row-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
             </td>
-            <td class="px-3 py-3 cursor-grab text-slate-300 hover:text-slate-500">
+            <td class="px-3 py-3 cursor-grab text-slate-300 hover:text-slate-500 col-drag">
               <i class="fas fa-grip-vertical drag-handle"></i>
             </td>
             <td class="px-3 py-3">
@@ -214,15 +219,12 @@
                    title="Editar">
                   <i class="fas fa-pen text-xs"></i>
                 </a>
-                <form method="post" action="{% url 'dashboard:post_delete' post.pk %}"
-                      onsubmit="return confirm('Excluir este post permanentemente?')" class="inline">
-                  {% csrf_token %}
-                  <button type="submit"
-                          class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Excluir">
-                    <i class="fas fa-trash-alt text-xs"></i>
-                  </button>
-                </form>
+                <button type="button"
+                        onclick="openDeleteModal({{ post.pk }}, '{{ post.title|default:post.pk|truncatechars:60|escapejs }}')"
+                        class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title="Excluir">
+                  <i class="fas fa-trash-alt text-xs"></i>
+                </button>
               </div>
             </td>
           </tr>
@@ -271,6 +273,36 @@
     </div>
     {% endif %}
   </form>
+</div>
+
+<!-- Form de exclusão individual (fora do bulk-form para evitar aninhamento inválido) -->
+<form id="delete-action-form" method="post" action="">
+  {% csrf_token %}
+</form>
+
+<!-- Modal de confirmação de exclusão -->
+<div id="delete-modal" class="fixed inset-0 z-[200] hidden items-center justify-center"
+     style="opacity:0;transition:opacity .2s ease-in-out;">
+  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+  <div id="delete-modal-content" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6"
+       style="transform:scale(.95);transition:transform .2s ease-out;">
+    <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mx-auto mb-4">
+      <i class="fas fa-trash-alt text-xl"></i>
+    </div>
+    <h3 class="text-lg font-bold text-slate-900 text-center mb-2">Excluir Post</h3>
+    <p class="text-sm text-slate-500 text-center mb-2">Tem certeza que deseja excluir permanentemente:</p>
+    <p id="delete-post-title" class="text-sm font-semibold text-slate-700 text-center mb-6 px-2 break-words"></p>
+    <div class="flex gap-3">
+      <button type="button" onclick="closeDeleteModal()"
+              class="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-colors">
+        Cancelar
+      </button>
+      <button type="button" id="confirm-delete-btn"
+              class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium shadow-sm shadow-red-600/30 transition-colors flex items-center justify-center gap-2">
+        <i class="fas fa-trash-alt"></i> Excluir
+      </button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -326,6 +358,42 @@ function bulkAction(action) {
   document.getElementById('bulk-action-input').value = action;
   document.getElementById('bulk-form').submit();
 }
+
+// ── Modal de exclusão ──────────────────────────────────────────────
+let _pendingDeletePk = null;
+
+function openDeleteModal(postPk, title) {
+  _pendingDeletePk = postPk;
+  document.getElementById('delete-post-title').textContent = title || 'este post';
+  const modal   = document.getElementById('delete-modal');
+  const content = document.getElementById('delete-modal-content');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  requestAnimationFrame(() => {
+    modal.style.opacity = '1';
+    content.style.transform = 'scale(1)';
+  });
+}
+
+function closeDeleteModal() {
+  const modal   = document.getElementById('delete-modal');
+  const content = document.getElementById('delete-modal-content');
+  modal.style.opacity = '0';
+  content.style.transform = 'scale(.95)';
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    _pendingDeletePk = null;
+  }, 200);
+}
+
+document.getElementById('confirm-delete-btn')?.addEventListener('click', function() {
+  if (_pendingDeletePk) {
+    const form = document.getElementById('delete-action-form');
+    form.action = '/painel/posts/' + _pendingDeletePk + '/excluir/';
+    form.submit();
+  }
+});
 
 // ── Quick Edit Inline ──────────────────────────────────────────────────
 const categoryColors = {

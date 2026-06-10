@@ -6,18 +6,74 @@
 {% block content %}
 <form method="post" enctype="multipart/form-data">
   {% csrf_token %}
-  
+
   <style>
     .form-grid-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
     @media(min-width: 1280px) { .form-grid-layout { grid-template-columns: 2fr 1fr; } }
-    
+
+    /* ── Upload Widget ────────────────────────────── */
+    .upload-widget { display: flex; flex-direction: column; gap: 10px; }
+
+    .upload-preview-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-section-2);
+      border: 2px dashed var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      transition: border-color .2s;
+    }
+    .upload-preview-box:hover { border-color: var(--color-accent); }
+    .upload-preview-box img {
+      display: block;
+      object-fit: contain;
+      max-width: 100%;
+    }
+    .upload-preview-box .no-file-placeholder {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      padding: 20px; color: var(--text-secondary);
+      font-size: 12px; text-align: center;
+    }
+
+    .upload-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .btn-upload {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px;
+      background: var(--color-accent); color: #fff;
+      border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none; transition: opacity .15s;
+      white-space: nowrap;
+    }
+    .btn-upload:hover { opacity: .85; }
+
+    .btn-clear {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 12px;
+      background: #fee2e2; color: #dc2626;
+      border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid #fca5a5; transition: background .15s;
+      white-space: nowrap;
+    }
+    .btn-clear:hover { background: #fecaca; }
+
+    .selected-file-name {
+      font-size: 12px; color: var(--text-secondary);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 180px;
+    }
+
+    /* hide Django's default ClearableFileInput output */
+    .django-file-widget { display: none !important; }
+
     .img-preview {
       display: block;
       border-radius: 8px;
       border: 1px solid var(--border-color);
       object-fit: contain;
       background: var(--bg-section-2);
-      margin-bottom: 12px;
     }
   </style>
 
@@ -40,25 +96,82 @@
             {% if form.site_name.errors %}<p style="color:#ef4444; font-size:12px; margin-top:4px;">{{ form.site_name.errors.0 }}</p>{% endif %}
           </div>
 
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom: 20px;">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom: 20px;">
+
+            <!-- Logo Upload -->
             <div>
               <label class="field-label">Logo</label>
-              {% if instance.logo %}
-                <img src="{{ instance.logo.url }}" alt="Logo" class="img-preview" id="logo-preview" style="height: 60px; padding: 4px;">
-              {% else %}
-                <img src="" alt="Logo Preview" class="img-preview" id="logo-preview" style="height: 60px; padding: 4px; display: none;">
-              {% endif %}
-              {{ form.logo }}
+              <div class="upload-widget" id="logo-widget">
+                <div class="upload-preview-box" style="height:80px;">
+                  {% if instance.logo %}
+                    <img src="{{ instance.logo.url }}" alt="Logo" id="logo-preview" style="height:72px; padding:4px;">
+                  {% else %}
+                    <div class="no-file-placeholder" id="logo-no-file">
+                      <i class="fas fa-image" style="font-size:20px; opacity:.4;"></i>
+                      <span>Sem logo</span>
+                    </div>
+                    <img src="" alt="Logo" id="logo-preview" style="height:72px; padding:4px; display:none;">
+                  {% endif %}
+                </div>
+                <div class="upload-actions">
+                  <label class="btn-upload" for="id_logo">
+                    <i class="fas fa-arrow-up-from-bracket"></i> Escolher
+                  </label>
+                  <span class="selected-file-name" id="logo-fname">
+                    {% if instance.logo %}{{ instance.logo.name|slice:"6:" }}{% else %}Nenhum arquivo{% endif %}
+                  </span>
+                  {% if instance.logo %}
+                    <label class="btn-clear" for="logo-clear_id" id="logo-clear-btn" title="Remover logo atual">
+                      <i class="fas fa-trash-can"></i> Limpar
+                    </label>
+                  {% else %}
+                    <span class="btn-clear" id="logo-clear-btn" style="display:none;">
+                      <i class="fas fa-trash-can"></i> Limpar
+                    </span>
+                  {% endif %}
+                </div>
+                <!-- Django widget hidden -->
+                <div class="django-file-widget">{{ form.logo }}</div>
+              </div>
             </div>
+
+            <!-- Favicon Upload -->
             <div>
               <label class="field-label">Favicon</label>
-              {% if instance.favicon %}
-                <img src="{{ instance.favicon.url }}" alt="Favicon" class="img-preview" id="favicon-preview" style="width: 48px; height: 48px;">
-              {% else %}
-                <img src="" alt="Favicon Preview" class="img-preview" id="favicon-preview" style="width: 48px; height: 48px; display: none;">
-              {% endif %}
-              {{ form.favicon }}
+              <div class="upload-widget" id="favicon-widget">
+                <div class="upload-preview-box" style="height:80px;">
+                  {% if instance.favicon %}
+                    <img src="{{ instance.favicon.url }}" alt="Favicon" id="favicon-preview" style="width:48px; height:48px;">
+                  {% else %}
+                    <div class="no-file-placeholder" id="favicon-no-file">
+                      <i class="fas fa-star" style="font-size:20px; opacity:.4;"></i>
+                      <span>Sem favicon</span>
+                    </div>
+                    <img src="" alt="Favicon" id="favicon-preview" style="width:48px; height:48px; display:none;">
+                  {% endif %}
+                </div>
+                <div class="upload-actions">
+                  <label class="btn-upload" for="id_favicon">
+                    <i class="fas fa-arrow-up-from-bracket"></i> Escolher
+                  </label>
+                  <span class="selected-file-name" id="favicon-fname">
+                    {% if instance.favicon %}{{ instance.favicon.name|slice:"9:" }}{% else %}Nenhum arquivo{% endif %}
+                  </span>
+                  {% if instance.favicon %}
+                    <label class="btn-clear" for="favicon-clear_id" id="favicon-clear-btn" title="Remover favicon atual">
+                      <i class="fas fa-trash-can"></i> Limpar
+                    </label>
+                  {% else %}
+                    <span class="btn-clear" id="favicon-clear-btn" style="display:none;">
+                      <i class="fas fa-trash-can"></i> Limpar
+                    </span>
+                  {% endif %}
+                </div>
+                <!-- Django widget hidden -->
+                <div class="django-file-widget">{{ form.favicon }}</div>
+              </div>
             </div>
+
           </div>
 
           <div style="display:flex; align-items:center; gap:12px;">
@@ -137,8 +250,9 @@
 
           {{ form.groq_api_key }}
           <div style="margin-top:12px;">
-            <a href="{% url 'dashboard:ai_settings' %}" style="font-size:12px; color:var(--color-accent); text-decoration:none;">
-              <i class="fas fa-gear" style="margin-right:4px;"></i> Gerenciar IA completo
+            <a href="{% url 'dashboard:ai_writer' %}"
+               style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--color-accent); text-decoration:none; font-weight:600; padding:5px 0; border-bottom:1px dashed var(--color-accent);">
+              <i class="fas fa-gear"></i> Gerenciar IA completo
             </a>
           </div>
         </div>
@@ -155,24 +269,58 @@
 </form>
 
 <script>
-  // Live image preview logic
-  function setupPreview(inputId, previewId) {
-    const input = document.getElementById(inputId);
+(function () {
+  function setupUploadWidget(inputId, previewId, fnameId, clearBtnId, noFileId) {
+    const input   = document.getElementById(inputId);
     const preview = document.getElementById(previewId);
-    if (!input || !preview) return;
+    const fname   = document.getElementById(fnameId);
+    const clearBtn = document.getElementById(clearBtnId);
+    const noFile  = noFileId ? document.getElementById(noFileId) : null;
+    if (!input) return;
 
-    input.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
+    input.addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+
+      // Update filename label
+      if (fname) fname.textContent = file.name;
+
+      // Live preview
+      if (preview) {
         preview.src = URL.createObjectURL(file);
         preview.style.display = 'block';
+        if (noFile) noFile.style.display = 'none';
       }
+
+      // Show clear button so user can cancel selection
+      if (clearBtn) clearBtn.style.display = 'inline-flex';
     });
+
+    // When clear checkbox is checked, reset preview
+    const clearCheckbox = document.getElementById(inputId.replace('id_', '') + '-clear_id');
+    if (clearCheckbox) {
+      clearCheckbox.addEventListener('change', function () {
+        if (this.checked) {
+          if (preview) { preview.src = ''; preview.style.display = 'none'; }
+          if (noFile)  noFile.style.display = 'flex';
+          if (fname)   fname.textContent = 'Será removido ao salvar';
+          if (clearBtn) {
+            clearBtn.style.background = '#fca5a5';
+            clearBtn.innerHTML = '<i class="fas fa-rotate-left"></i> Desfazer';
+          }
+        } else {
+          if (fname) fname.textContent = 'Nenhum arquivo';
+          if (clearBtn) {
+            clearBtn.style.background = '';
+            clearBtn.innerHTML = '<i class="fas fa-trash-can"></i> Limpar';
+          }
+        }
+      });
+    }
   }
 
-  // Find the file inputs generated by Django
-  // Django's ClearableFileInput uses names like 'logo', so IDs are 'id_logo'
-  setupPreview('id_logo', 'logo-preview');
-  setupPreview('id_favicon', 'favicon-preview');
+  setupUploadWidget('id_logo',    'logo-preview',    'logo-fname',    'logo-clear-btn',    'logo-no-file');
+  setupUploadWidget('id_favicon', 'favicon-preview', 'favicon-fname', 'favicon-clear-btn', 'favicon-no-file');
+})();
 </script>
 {% endblock %}

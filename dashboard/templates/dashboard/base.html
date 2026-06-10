@@ -502,6 +502,13 @@
       backdrop-filter: blur(2px);
     }
     @media (max-width: 1023px) {
+      /* Previne scroll horizontal na página */
+      html, body { overflow-x: hidden; }
+      /* Converte layout para block: sidebar fixed sai do fluxo,
+         main ocupa 100% da largura automaticamente */
+      .dash-layout { display: block; }
+      .dash-main   { width: 100%; }
+
       .dash-sidebar {
         position: fixed;
         top: var(--dash-header-h);
@@ -527,19 +534,27 @@
       .dash-brand-name { font-size: 1rem; }
     }
 
-    /* Mobile pequeno: ocultar badge, compactar tema switcher */
-    @media (max-width: 480px) {
+    /* Mobile pequeno: ocultar badge, compactar tema switcher,
+       esconder botões redundantes do topbar */
+    @media (max-width: 640px) {
       .dash-badge { display: none; }
       .dash-sidebar { width: 82vw !important; }
       #theme-name { display: none; }
       .theme-switch-btn { padding: 5px 8px; }
-      .dash-main > div[style*="padding"] { padding: 12px !important; }
+      /* Esconde "Ver site" do topbar (já disponível na sidebar) */
+      .topbar-site-link { display: none !important; }
+      /* Condensa botão de ação principal para ícone */
+      .btn-create-post .btn-text { display: none; }
+      .btn-create-post { padding: 8px 12px; }
     }
 
     /* Reduzir padding do conteúdo em mobile */
     @media (max-width: 640px) {
       .dash-main > div { padding: 12px; }
       .dash-alerts { padding: 12px 12px 0; }
+    }
+    @media (max-width: 480px) {
+      .dash-main > div[style*="padding"] { padding: 12px !important; }
     }
 
     /* ── CARDS & UTILITIES ──────────────────────────────────────── */
@@ -685,10 +700,9 @@
   <div class="topbar-right">
     {% block topbar_actions %}{% endblock %}
 
-    <!-- View site -->
-    <a href="/" target="_blank" class="topbar-btn" title="Ver site público">
+    <!-- View site (hidden on mobile — also accessible via sidebar) -->
+    <a href="/" target="_blank" class="topbar-btn topbar-site-link" title="Ver site público">
       <i class="fas fa-globe" style="font-size:12px;"></i>
-      <span style="display:none;" class="sm-show">Site</span>
     </a>
 
     <!-- Theme switcher -->
@@ -799,12 +813,6 @@
         <span class="dash-nav-label">IA Escritor</span>
       </a>
 
-      <a href="{% url 'dashboard:ai_settings' %}"
-         class="dash-nav-link {% if request.resolver_match.url_name == 'ai_settings' %}active{% endif %}"
-         data-label="Config IA">
-        <i class="fas fa-brain"></i>
-        <span class="dash-nav-label">Config IA</span>
-      </a>
 
       <!-- Blog access links -->
       <div class="sidebar-divider"></div>

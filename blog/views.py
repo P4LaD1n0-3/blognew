@@ -110,18 +110,22 @@ class PostDetailView(DetailView):
     def get_object(self, queryset=None):
         category_slug = self.kwargs.get('category_slug')
         post_slug = self.kwargs.get('post_slug')
-        
+
         if not category_slug or not post_slug:
             raise Http404("URL inválida. Slug da categoria ou do post ausente.")
 
         queryset = self.get_queryset().select_related('author', 'category')
-        
-        post_obj = get_object_or_404(
-            queryset,
-            status='published',
-            translations__slug=post_slug,
-            category__translations__slug=category_slug
-        )
+
+        filters = {
+            'translations__slug': post_slug,
+            'category__translations__slug': category_slug,
+        }
+        # Rascunhos só são visíveis para staff/superuser autenticados (preview)
+        user = self.request.user
+        if not (user.is_authenticated and (user.is_staff or user.is_superuser)):
+            filters['status'] = 'published'
+
+        post_obj = get_object_or_404(queryset, **filters)
         return post_obj
 
     def get_queryset(self):

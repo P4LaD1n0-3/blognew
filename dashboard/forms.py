@@ -15,7 +15,7 @@ class PostForm(TranslatableModelForm):
         model = Post
         fields = [
             'title', 'slug', 'content', 'meta_title', 'meta_description',
-            'author', 'category', 'thumbnail', 'keywords', 'status',
+            'author', 'category', 'thumbnail', 'video', 'keywords', 'status',
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -54,6 +54,11 @@ class PostForm(TranslatableModelForm):
             }),
             'thumbnail': forms.ClearableFileInput(attrs={
                 'class': 'w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100',
+                'accept': 'image/*',
+            }),
+            'video': forms.ClearableFileInput(attrs={
+                'class': 'w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100',
+                'accept': 'video/mp4,video/webm,video/quicktime,video/x-msvideo',
             }),
         }
 

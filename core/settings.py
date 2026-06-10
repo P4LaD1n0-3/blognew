@@ -195,6 +195,10 @@ TINYMCE_DEFAULT_CONFIG = {
     "content_style": "body { font-size: 18px; line-height: 1.6; font-family: 'Inter', 'Google Sans', sans-serif; color: #333; }",
     "content_css": "default",
     "skin": "oxide",
+
+    # Permite que o TinyMCE preserve todos os estilos inline (necessário para a IA formatadora)
+    "valid_styles": {"*": "*"},
+    "extended_valid_elements": "*[style|class|id|data-*]",
 }
 
 

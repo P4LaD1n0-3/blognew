@@ -328,13 +328,14 @@ class AgentPipeline:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
+        is_reasoning = "deepseek-r1" in self.model_name or "r1-distill" in self.model_name
         payload = {
             "model": self.model_name,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "temperature": 0.7,
+            "temperature": 1 if is_reasoning else 0.7,
         }
 
         for attempt in range(5):
@@ -367,8 +368,16 @@ class AgentPipeline:
                 time.sleep(wait)
                 continue
 
-            resp.raise_for_status()
+            if resp.status_code != 200:
+                try:
+                    groq_msg = resp.json().get("error", {}).get("message", "") or resp.text[:400]
+                except Exception:
+                    groq_msg = resp.text[:400]
+                raise Exception(f"Groq API {resp.status_code}: {groq_msg}")
             content = resp.json()["choices"][0]["message"]["content"]
+
+            # Remove bloco de raciocínio interno dos modelos DeepSeek-R1 (<think>...</think>)
+            content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
 
             if expect_json:
                 parsed = self._extract_json(content)
@@ -1240,14 +1249,276 @@ _FORMAT_THEMES = [
 #  NOVA VIEW: FORMATAR CONTEÚDO com IA  (estilo único a cada clique)
 # =====================================================================
 
+_FORMAT_P_STYLE  = "line-height:1.85; color:#374151; margin-bottom:18px; font-size:1.05em;"
+_FORMAT_UL_STYLE = "line-height:1.9; color:#374151; margin:16px 0 16px 24px;"
+_FORMAT_LI_STYLE = "margin-bottom:8px;"
+
+# Mini-exemplo fixo: mostra PROMOÇÃO de <p> curto para <h2>/<h3> + estilização
+_MINI_EXAMPLE_IN = (
+    '<p>Seção Principal</p>'
+    '<p>Texto do parágrafo com conteúdo mais longo descrevendo algo importante.</p>'
+    '<p>1. Subseção Numerada</p>'
+    '<p>Detalhe da subseção aqui.</p>'
+    '<strong>palavra chave</strong>'
+)
+
+# Modelos menores que precisam de prompt simplificado (instruction-following fraco)
+_SMALL_MODELS = frozenset({
+    "llama-3.1-8b-instant", "gemma2-9b-it",
+    "openai/gpt-oss-20b", "groq/compound-mini",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+})
+
+
+def _is_small_model(model_name: str) -> bool:
+    if model_name in _SMALL_MODELS:
+        return True
+    n = model_name.lower()
+    return any(f"{d}b" in n for d in ["7", "8", "9", "13", "17"])
+
+
+def _truncate_html_safe(html: str, max_chars: int = 13000) -> str:
+    """Trunca no fechamento de uma tag, sem cortar dentro de um atributo."""
+    if len(html) <= max_chars:
+        return html
+    cutoff = html.rfind(">", 0, max_chars)
+    return html[: cutoff + 1] if cutoff > max_chars // 2 else html[:max_chars]
+
+
+def _mini_example_out(theme: dict) -> str:
+    """Saída esperada do exemplo: demonstra promoção de <p> curto para <h2>/<h3>."""
+    return (
+        f'<h2 style="{theme["h2"]}">Seção Principal</h2>'
+        f'<p style="{_FORMAT_P_STYLE}">Texto do parágrafo com conteúdo mais longo descrevendo algo importante.</p>'
+        f'<h3 style="{theme["h3"]}">1. Subseção Numerada</h3>'
+        f'<p style="{_FORMAT_P_STYLE}">Detalhe da subseção aqui.</p>'
+        f'<strong style="{theme["strong"]}">palavra chave</strong>'
+    )
+
+
+def _detect_and_promote_headings(html: str) -> str:
+    """
+    Heurística para artigos escritos como texto plano (apenas <p>).
+    Promove <p> curtos sem pontuação final a <h2> ou <h3>.
+
+    Regras:
+    - texto ≤ 120 chars E não termina com . ! ? , ; → candidato a heading
+    - começa com dígito+ponto/parêntese (1. / 2) / etc.) → <h3>
+    - caso contrário → <h2>
+    """
+    _MAX = 120
+    _NO_END = ".!?,;"
+
+    def maybe_promote(m: re.Match) -> str:
+        inner = m.group(1)
+        text = re.sub(r"<[^>]+>", "", inner).strip()
+        if not text or len(text) < 4 or len(text) > _MAX:
+            return m.group(0)
+        if text[-1] in _NO_END:
+            return m.group(0)
+        tag = "h3" if re.match(r"^\d+[\.\)]\s", text) else "h2"
+        return f"<{tag}>{inner}</{tag}>"
+
+    return re.sub(r"<p>(.*?)</p>", maybe_promote, html, flags=re.DOTALL)
+
+
+def _apply_styles_regex(html: str, theme: dict) -> str:
+    """
+    Fallback 100% confiável: promove headings e aplica os estilos do tema via regex.
+    Nunca falha, nunca perde conteúdo.
+    """
+    # Pré-processamento: promove <p> que parecem títulos de seção
+    html = _detect_and_promote_headings(html)
+
+    style_map = [
+        ("p",          _FORMAT_P_STYLE),
+        ("h2",         theme["h2"]),
+        ("h3",         theme["h3"]),
+        ("strong",     theme["strong"]),
+        ("em",         "font-style:italic;"),
+        ("blockquote", theme["blockquote"]),
+        ("ul",         _FORMAT_UL_STYLE),
+        ("ol",         _FORMAT_UL_STYLE),
+        ("li",         _FORMAT_LI_STYLE),
+    ]
+
+    def make_replacer(tag: str, style: str):
+        def replacer(m: re.Match) -> str:
+            attrs = m.group(1) or ""
+            # Remove estilo existente para não duplicar
+            attrs = re.sub(r'\s*style\s*=\s*(["\'])[^"\']*\1', "", attrs)
+            attrs = attrs.strip()
+            base = f"<{tag} style=\"{style}\""
+            return f"{base} {attrs}>" if attrs else f"{base}>"
+        return replacer
+
+    for tag, style in style_map:
+        pattern = re.compile(rf"<{tag}(\s[^>]*)?>", re.IGNORECASE)
+        html = pattern.sub(make_replacer(tag, style), html)
+
+    # <hr> é auto-fechante — trata separadamente
+    html = re.sub(
+        r"<hr[^>]*/?>",
+        f'<hr style="{theme["hr"]}">',
+        html, flags=re.IGNORECASE,
+    )
+    return html
+
+
+_REASONING_PHRASES = re.compile(
+    r"I need to apply|the original HTML|the provided HTML|Let me start by|"
+    r"Okay,?\s+I need|I'll apply the|I will apply|I should apply|"
+    r"Let me think|the user(?:'s)? instructions|apply the styles to|"
+    r"applying the styles|step by step\.",
+    re.IGNORECASE,
+)
+
+
+def _clean_html_output(raw: str) -> str:
+    """
+    Remove artefatos de modelos ao redor do HTML.
+    Retorna string vazia se o conteúdo parecer raciocínio inline em vez de HTML.
+    """
+    if not raw or not isinstance(raw, str):
+        return ""
+
+    # 1. Remove blocos <think> (DeepSeek / Qwen / modelos explícitos de raciocínio)
+    raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+
+    # Tenta extrair de um bloco markdown primeiro!
+    match = re.search(r"```(?:html|xml)?\s*\n(.*?)\n\s*```", raw, re.DOTALL | re.IGNORECASE)
+    if match:
+        raw = match.group(1).strip()
+    else:
+        # 2. Remove code fences soltos nas pontas
+        raw = re.sub(r"^```[^\n]*\n?", "", raw, flags=re.IGNORECASE).strip()
+        raw = re.sub(r"\n?```[^\n]*$", "", raw, flags=re.IGNORECASE).strip()
+
+        # 3. Localiza o início real do HTML: primeira tag de bloco com style=
+        first_styled = re.search(
+            r"<(?:p|h[1-6]|div|ul|ol|li|strong|em|blockquote|figure|table|hr|span)\s[^>]*style\s*=",
+            raw, re.IGNORECASE,
+        )
+        if first_styled:
+            # Se a tag estilizada aparece mais de 200 chars adiante, é raciocínio antes do HTML
+            if first_styled.start() > 200:
+                return ""
+            raw = raw[first_styled.start():]
+        else:
+            # Sem style= nenhum → tenta qualquer tag de bloco bem no início (primeiros 10%)
+            first_block = re.search(
+                r"<(?:p|h[1-6]|div|ul|ol|blockquote|figure|table)\b",
+                raw, re.IGNORECASE,
+            )
+            if first_block and first_block.start() < max(100, len(raw) // 10):
+                raw = raw[first_block.start():]
+            else:
+                return ""
+
+    # 4. Trim após o último fechamento de tag
+    last_gt = raw.rfind(">")
+    if 0 <= last_gt < len(raw) - 1:
+        raw = raw[: last_gt + 1]
+
+    return raw.strip()
+
+
+def _is_valid_format_result(result: str, original: str) -> bool:
+    """
+    Critérios de aceitação do HTML formatado pelo LLM:
+    1. Começa com uma tag HTML real
+    2. Contém style= (prova que estilos foram aplicados)
+    3. Tem tamanho razoável (≥ 60% do original; estilos SOMAM, não removem)
+    4. Preservou os elementos de bloco (p + h1-h6 + li); promoção p→h é válida
+    5. Não contém frases típicas de raciocínio LLM inline
+    """
+    if not result:
+        return False
+    if not re.match(r"\s*<[a-zA-Z]", result):
+        return False
+    if "style=" not in result:
+        return False
+    if len(result) < len(original) * 0.6:
+        return False
+    # Conta elementos de bloco; promoção p→h é legítima e não conta como perda
+    _block = r"<(?:p|h[1-6]|li)[\s>]"
+    orig_blocks = len(re.findall(_block, original, re.IGNORECASE))
+    res_blocks  = len(re.findall(_block, result,   re.IGNORECASE))
+    if orig_blocks > 2 and res_blocks < orig_blocks * 0.6:
+        return False
+    # Detecta raciocínio inline: extrai texto puro e procura frases de LLM
+    text_only = re.sub(r"<[^>]+>", " ", result)
+    if _REASONING_PHRASES.search(text_only):
+        return False
+    return True
+
+
+def _build_format_prompt_full(theme: dict) -> str:
+    """Prompt para modelos grandes (≥ 30 B) — português, com exemplo concreto."""
+    return (
+        "Você é um processador de HTML editorial. Recebe HTML de um artigo e devolve "
+        "o mesmo HTML com inline styles e estrutura semântica melhorada.\n\n"
+        f"TEMA: {theme['name']}\n\n"
+        "PASSO 1 — PROMOVER TÍTULOS (faça ANTES de estilizar):\n"
+        "• Se um <p> tem texto curto (até 120 chars) SEM ponto/vírgula/exclamação no final\n"
+        "  → promova para <h2> (seção) ou <h3> (subseção numerada como '1. Texto')\n"
+        "• Parágrafos longos (> 120 chars) ou com pontuação final → mantém como <p>\n\n"
+        "PASSO 2 — APLICAR ESTILOS em TODOS os elementos (inclusive os promovidos):\n"
+        f'  <p>          →  style="{_FORMAT_P_STYLE}"\n'
+        f'  <h2>         →  style="{theme["h2"]}"\n'
+        f'  <h3>         →  style="{theme["h3"]}"\n'
+        f'  <strong>     →  style="{theme["strong"]}"\n'
+        f'  <blockquote> →  style="{theme["blockquote"]}"\n'
+        f'  <hr>         →  style="{theme["hr"]}"\n'
+        f'  <ul>         →  style="{_FORMAT_UL_STYLE}"\n'
+        f'  <ol>         →  style="{_FORMAT_UL_STYLE}"\n'
+        f'  <li>         →  style="{_FORMAT_LI_STYLE}"\n\n'
+        "REGRAS INVIOLÁVEIS:\n"
+        "• Preserva TODO o texto — apenas muda tags e adiciona style=\n"
+        "• Preserva imagens, links, figuras, src, href exatamente como estão\n"
+        "• RESPONDA EXCLUSIVAMENTE COM UM BLOCO MARKDOWN ````html ... ```` CONTENDO O HTML.\n\n"
+        f"EXEMPLO (entrada → saída esperada):\n"
+        f"ENTRADA: {_MINI_EXAMPLE_IN}\n"
+        f"SAÍDA:\n```html\n{_mini_example_out(theme)}\n```\n\n"
+        "Processe o HTML recebido agora e retorne apenas o bloco ```html."
+    )
+
+
+def _build_format_prompt_simple(theme: dict) -> str:
+    """Prompt ultra-direto para modelos pequenos (≤ 20 B)."""
+    return (
+        "HTML formatter. Two steps:\n\n"
+        "STEP 1 - PROMOTE HEADINGS:\n"
+        "• Short <p> (≤120 chars, no period/comma/exclamation at end) → convert to <h2> or <h3>\n"
+        "• <p> starting with '1. ' '2. ' etc → <h3>. Others → <h2>.\n"
+        "• Long <p> or ending with . ! ? , ; → keep as <p>\n\n"
+        "STEP 2 - ADD STYLES to ALL elements:\n"
+        f'p → style="{_FORMAT_P_STYLE}"\n'
+        f'h2 → style="{theme["h2"]}"\n'
+        f'h3 → style="{theme["h3"]}"\n'
+        f'strong → style="{theme["strong"]}"\n'
+        f'blockquote → style="{theme["blockquote"]}"\n'
+        f'hr → style="{theme["hr"]}"\n'
+        f'ul, ol → style="{_FORMAT_UL_STYLE}"\n'
+        f'li → style="{_FORMAT_LI_STYLE}"\n\n'
+        "Keep ALL text. Output ONLY a markdown block: ```html ... ```\n\n"
+        f"Example input: {_MINI_EXAMPLE_IN}\n"
+        f"Example output:\n```html\n{_mini_example_out(theme)}\n```"
+    )
+
+
 @method_decorator(staff_member_required, name="dispatch")
 class FormatContentView(View):
-    """Recebe HTML do editor TinyMCE e devolve HTML reformatado com estilo único aleatório."""
+    """
+    Recebe HTML do TinyMCE e devolve HTML com inline styles aplicados.
+    Garante que o conteúdo NUNCA é perdido: se o LLM falhar, aplica
+    estilos via regex Python puro como fallback de segurança.
+    """
 
     def post(self, request):
         from .models import SiteSettings
         try:
-            api_key = SiteSettings.load().groq_api_key or ""
+            api_key = request.POST.get("api_key") or SiteSettings.load().groq_api_key or ""
         except Exception:
             api_key = ""
 
@@ -1258,49 +1529,51 @@ class FormatContentView(View):
             })
 
         html_content = request.POST.get("content", "").strip()
-        title = request.POST.get("title", "")
-
         if not html_content:
             return JsonResponse({"status": "error", "error": "O conteúdo está vazio."})
 
-        # Escolhe um tema visual aleatório diferente a cada chamada
         theme = random.choice(_FORMAT_THEMES)
+        model_name = request.POST.get("model", "llama-3.3-70b-versatile")
+        small = _is_small_model(model_name)
+
+        # Prompt primário e alternativo (invertidos por tamanho de modelo)
+        prompts = (
+            [_build_format_prompt_simple(theme), _build_format_prompt_full(theme)]
+            if small
+            else [_build_format_prompt_full(theme), _build_format_prompt_simple(theme)]
+        )
+
+        html_to_send = _truncate_html_safe(html_content)
+        user_msg = f"HTML DO ARTIGO:\n\n{html_to_send}"
 
         try:
-            system = (
-                f"Você é um designer editorial premium. "
-                f"O estilo desta edição é: **{theme['name']}**.\n"
-                "Receberá HTML de um artigo. Reformate visualmente usando APENAS inline styles.\n\n"
-                "ESTILOS OBRIGATÓRIOS DESTE TEMA:\n"
-                f"- <h2>: style='{theme['h2']}'\n"
-                f"- <h3>: style='{theme['h3']}'\n"
-                f"- <strong>: substitua por <strong style='{theme['strong']}'>texto</strong>\n"
-                f"- <blockquote>: style='{theme['blockquote']}'\n"
-                f"- <hr>: substitua por <hr style='{theme['hr']}'>\n"
-                "- <p>: style='line-height:1.85; color:#374151; margin-bottom:18px; font-size:1.05em;'\n"
-                "- <ul>,<ol>: style='line-height:1.9; color:#374151; margin:16px 0 16px 24px;'\n"
-                "- <li>: style='margin-bottom:8px;'\n\n"
-                "BOXES DE DESTAQUE (para estatísticas e informações importantes):\n"
-                f"- Envolva em: <div style='{theme['callout']}'>...conteúdo...</div>\n"
-                "- Adicione separadores <hr> entre seções grandes se não houver.\n\n"
-                "REGRAS ABSOLUTAS:\n"
-                "- Preserve TODAS as imagens, <figure>, <figcaption> e URLs INALTERADOS.\n"
-                "- Não altere o conteúdo textual — apenas reformate visualmente.\n"
-                "- Retorne APENAS o HTML reformatado. Sem markdown, sem code fences, sem explicações."
-            )
+            pipeline = AgentPipeline(model_name, api_key)
+            result_html = None  # será preenchido pelo LLM ou pelo fallback
 
-            pipeline = AgentPipeline("llama-3.3-70b-versatile", api_key)
-            result = pipeline._call_llm(system, f"HTML DO ARTIGO:\n\n{html_content[:14000]}")
+            for attempt, system_prompt in enumerate(prompts):
+                raw = pipeline._call_llm(system_prompt, user_msg, expect_json=False)
+                cleaned = _clean_html_output(str(raw))
 
-            if isinstance(result, dict):
-                result = result.get("html", html_content)
-            if isinstance(result, str):
-                result = re.sub(r"^```html?\s*", "", result.strip(), flags=re.IGNORECASE)
-                result = re.sub(r"\s*```$", "", result.strip())
+                if cleaned and _is_valid_format_result(cleaned, html_content):
+                    result_html = cleaned
+                    break
+
+                pipeline._log(
+                    f"[FORMAT] Tentativa {attempt + 1} inválida "
+                    f"(len={len(cleaned) if cleaned else 0}, style={'style=' in cleaned if cleaned else False}). "
+                    "Retentar..."
+                )
+
+            # ── Fallback Python puro ──────────────────────────────────────────
+            # Se ambas as tentativas com LLM falharam, aplica estilos via regex.
+            # O conteúdo é SEMPRE preservado; apenas o LLM pode perder conteúdo.
+            if result_html is None:
+                pipeline._log("[FORMAT] LLM falhou nas 2 tentativas. Usando fallback regex.")
+                result_html = _apply_styles_regex(html_content, theme)
 
             return JsonResponse({
                 "status": "success",
-                "html": result,
+                "html": result_html,
                 "theme": theme["name"],
             })
 

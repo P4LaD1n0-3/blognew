@@ -450,13 +450,39 @@ def newsletter_list(request):
 
 @master_required
 def ai_writer(request):
+    from blog.admin_views import AgentPipeline
     site_settings = SiteSettings.load()
     default_api_key = site_settings.groq_api_key or ''
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        if action == 'test_connection':
+            key = request.POST.get('api_key', '').strip()
+            if not key:
+                return JsonResponse({'status': 'error', 'error': 'Insira uma chave API primeiro.'})
+            try:
+                pipeline = AgentPipeline('llama-3.3-70b-versatile', key)
+                result = pipeline._call_llm(
+                    'Você é um assistente de teste. Responda APENAS com: CONECTADO',
+                    'ping',
+                    expect_json=False,
+                )
+                snippet = str(result).strip()[:80]
+                return JsonResponse({'status': 'success', 'message': f'Conexão OK: {snippet}'})
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'error': str(e)[:300]})
+
+        if action == 'save_key':
+            key = request.POST.get('api_key', '').strip()
+            site_settings.groq_api_key = key
+            site_settings.save()
+            request.session['ai_writer_api_key'] = key
+            return JsonResponse({'status': 'success', 'message': 'Chave API salva permanentemente!'})
 
     context = {
         'categories': Category.objects.all(),
         'authors': Author.objects.filter(is_team_member=True),
-        'saved_provider': request.session.get('ai_writer_provider', 'groq_gpt_oss_120b'),
+        'saved_provider': request.session.get('ai_writer_provider', 'llama-3.3-70b-versatile'),
         'saved_api_key': request.session.get('ai_writer_api_key') or default_api_key,
         'saved_category': request.session.get('ai_writer_category', ''),
         'saved_author': request.session.get('ai_writer_author', ''),
@@ -475,7 +501,7 @@ def ai_generate(request):
     from django.utils.text import slugify
     from django.core.files.base import ContentFile
 
-    provider = request.POST.get('provider', 'groq_gpt_oss_120b')
+    provider = request.POST.get('provider', 'llama-3.3-70b-versatile')
     api_key = request.POST.get('api_key', '').strip()
     category_id = request.POST.get('category')
     author_id = request.POST.get('author')
@@ -502,7 +528,7 @@ def ai_generate(request):
     try:
         category = Category.objects.get(id=category_id)
         author = Author.objects.get(id=author_id)
-        model_name = 'openai/gpt-oss-120b' if provider == 'groq_gpt_oss_120b' else 'llama-3.3-70b-versatile'
+        model_name = provider
         i = current_iteration - 1
 
         pipeline = AgentPipeline(model_name, api_key)
@@ -549,6 +575,12 @@ def ai_generate(request):
 @require_POST
 def ai_format(request):
     from blog.admin_views import FormatContentView
+    if not request.POST.get('api_key'):
+        session_key = request.session.get('ai_writer_api_key', '')
+        if session_key:
+            post_data = request.POST.copy()
+            post_data['api_key'] = session_key
+            request.POST = post_data
     view = FormatContentView()
     return view.post(request)
 
@@ -569,48 +601,6 @@ def ai_seo(request, post_id):
     from blog.admin_views import GenerateSEOView
     view = GenerateSEOView()
     return view.post(request)
-
-
-@master_required
-def ai_settings(request):
-    from blog.admin_views import AgentPipeline
-    instance = SiteSettings.load()
-    api_key = instance.groq_api_key or ''
-    masked = ('•' * (len(api_key) - 4) + api_key[-4:]) if len(api_key) > 4 else '•' * len(api_key)
-
-    if request.method == 'POST':
-        action = request.POST.get('action', '')
-
-        if action == 'test_connection':
-            key = request.POST.get('api_key', '').strip()
-            if not key:
-                return JsonResponse({'status': 'error', 'error': 'Insira uma chave API primeiro.'})
-            try:
-                pipeline = AgentPipeline('llama-3.3-70b-versatile', key)
-                result = pipeline._call_llm(
-                    'Você é um assistente de teste. Responda APENAS com: CONECTADO',
-                    'ping',
-                    expect_json=False,
-                )
-                snippet = str(result).strip()[:80]
-                return JsonResponse({'status': 'success', 'message': f'Conexão OK: {snippet}'})
-            except Exception as e:
-                return JsonResponse({'status': 'error', 'error': str(e)[:300]})
-
-        if action == 'save_key':
-            key = request.POST.get('api_key', '').strip()
-            SiteSettings.objects.filter(pk=1).update(groq_api_key=key)
-            verb = 'salva' if key else 'removida'
-            messages.success(request, f'Chave API Groq {verb} com sucesso.')
-            return redirect('dashboard:ai_settings')
-
-    context = {
-        'groq_api_key': api_key,
-        'masked_key': masked,
-        'has_key': bool(api_key),
-    }
-    return render(request, 'dashboard/ai_settings.html', context)
-
 
 # ─── Helper ────────────────────────────────────────────────────────────
 

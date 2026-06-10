@@ -32,7 +32,6 @@ urlpatterns = [
     path('newsletter/', views.newsletter_list, name='newsletter'),
 
     path('ia/escritor/', views.ai_writer, name='ai_writer'),
-    path('ia/configuracoes/', views.ai_settings, name='ai_settings'),
     path('ia/gerar/', views.ai_generate, name='ai_generate'),
     path('ia/formatar/', views.ai_format, name='ai_format'),
     path('ia/traduzir/<int:post_id>/', views.ai_translate, name='ai_translate'),
