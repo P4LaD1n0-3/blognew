@@ -1171,77 +1171,93 @@ def auto_translate_post(post) -> None:
 # ─────────────────────────────────────────────────────────────────────
 _FORMAT_THEMES = [
     {
-        "name": "Esmeralda",
-        "h2":  "color:#059669; border-left:5px solid #10b981; padding-left:16px; margin:36px 0 18px; font-size:1.55em; line-height:1.3;",
-        "h3":  "color:#065f46; border-bottom:2px solid #d1fae5; padding-bottom:8px; margin:26px 0 14px;",
-        "strong": "color:#059669; font-weight:700;",
-        "blockquote": "border-left:5px solid #10b981; background:#f0fdf4; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#374151;",
-        "callout": "background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #86efac; border-left:5px solid #10b981; border-radius:12px; padding:20px 24px; margin:28px 0;",
-        "hr": "border:0; border-top:2px solid #d1fae5; margin:42px 0;",
+        "name": "Minimalista Elegante",
+        "h2":  "border:none; background:transparent; font-family:'Inter', sans-serif; color:#111827; padding:0; padding-bottom:12px; border-bottom:2px solid #e5e7eb; margin:48px 0 24px; font-size:2em; font-weight:800; letter-spacing:-0.02em; line-height:1.2;",
+        "h3":  "border:none; background:transparent; font-family:'Inter', sans-serif; color:#374151; padding:0; margin:32px 0 16px; font-size:1.5em; font-weight:700; letter-spacing:-0.01em;",
+        "strong": "color:#111827; font-weight:700; background:rgba(243,244,246,0.8); padding:0 4px; border-radius:4px;",
+        "blockquote": "border:none; border-left:4px solid #111827; background:#f9fafb; padding:24px 32px; border-radius:0 12px 12px 0; margin:40px 0; font-style:italic; color:#4b5563; font-size:1.15em; line-height:1.7;",
+        "hr": "border:0; border-top:1px solid #e5e7eb; margin:48px 0;",
+        "table": "width:100%; border-collapse:collapse; margin:32px 0; font-family:'Inter', sans-serif; font-size:0.95em; border-radius:8px; overflow:hidden; border:1px solid #e5e7eb;",
+        "th": "background:#f9fafb; color:#111827; padding:16px; text-align:left; font-weight:600; border-bottom:1px solid #e5e7eb;",
+        "td": "padding:16px; border-bottom:1px solid #f3f4f6; color:#4b5563;",
     },
     {
-        "name": "Violeta Premium",
-        "h2":  "background:linear-gradient(90deg,#7c3aed,#6d28d9); color:#fff; padding:12px 20px; border-radius:8px; margin:36px 0 18px; font-size:1.45em; box-shadow:0 4px 14px rgba(124,58,237,.25);",
-        "h3":  "color:#6d28d9; border-left:4px solid #a78bfa; padding-left:14px; margin:26px 0 14px;",
-        "strong": "color:#7c3aed; font-weight:700;",
-        "blockquote": "border-left:5px solid #8b5cf6; background:#f5f3ff; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#4c1d95;",
-        "callout": "background:linear-gradient(135deg,#f5f3ff,#ede9fe); border:1px solid #c4b5fd; border-left:5px solid #7c3aed; border-radius:12px; padding:20px 24px; margin:28px 0;",
-        "hr": "border:0; height:3px; background:linear-gradient(90deg,#7c3aed,#8b5cf6,transparent); margin:42px 0;",
+        "name": "Neon Tech (Dark Mode Vibe)",
+        "h2":  "border:none; background:linear-gradient(90deg, #10b981, #3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-family:'Roboto', sans-serif; padding:0; margin:48px 0 24px; font-size:2.2em; font-weight:900; letter-spacing:0.5px;",
+        "h3":  "border:none; background:transparent; font-family:'Roboto', sans-serif; color:#3b82f6; padding:0; border-left:4px solid #10b981; padding-left:16px; margin:32px 0 16px; font-size:1.6em; font-weight:700;",
+        "strong": "color:#10b981; font-weight:800;",
+        "blockquote": "border:none; border-left:4px solid #3b82f6; background:rgba(59,130,246,0.05); padding:24px 32px; border-radius:8px; margin:40px 0; font-style:italic; color:#1e293b; font-size:1.1em; box-shadow:inset 4px 0 0 #3b82f6;",
+        "hr": "border:0; height:2px; background:linear-gradient(90deg, transparent, #10b981, #3b82f6, transparent); margin:48px 0;",
+        "table": "width:100%; border-collapse:collapse; margin:32px 0; font-family:'Roboto', sans-serif; font-size:0.95em; border-radius:12px; overflow:hidden; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);",
+        "th": "background:#0f172a; color:#f8fafc; padding:16px; text-align:left; font-weight:600;",
+        "td": "padding:16px; border-bottom:1px solid #e2e8f0; color:#334155; background:#f8fafc;",
     },
     {
-        "name": "Âmbar Editorial",
-        "h2":  "color:#92400e; border-bottom:3px solid #f59e0b; padding-bottom:10px; margin:38px 0 18px; font-size:1.55em; letter-spacing:-.3px;",
-        "h3":  "color:#b45309; background:#fffbeb; padding:8px 14px; border-radius:6px; border-left:3px solid #f59e0b; margin:26px 0 14px;",
+        "name": "Revista Clássica",
+        "h2":  "border:none; background:transparent; font-family:'Playfair Display', serif; color:#7f1d1d; padding:0; text-align:center; margin:56px 0 28px; font-size:2.4em; font-style:italic; font-weight:700; position:relative;",
+        "h3":  "border:none; background:transparent; font-family:'Montserrat', sans-serif; color:#991b1b; padding:0; text-transform:uppercase; letter-spacing:2px; margin:40px 0 16px; font-size:1.1em; font-weight:800; border-bottom:1px solid #fecaca; padding-bottom:8px;",
+        "strong": "color:#7f1d1d; font-weight:700; font-family:'Montserrat', sans-serif;",
+        "blockquote": "border:none; border-top:3px solid #7f1d1d; border-bottom:3px solid #7f1d1d; background:transparent; padding:32px 0; margin:48px auto; font-style:italic; color:#450a0a; font-family:'Playfair Display', serif; font-size:1.4em; text-align:center; max-width:80%; line-height:1.6;",
+        "hr": "border:0; border-top:1px solid #fca5a5; margin:48px 0; display:flex; justify-content:center; align-items:center;",
+        "table": "width:100%; border-collapse:collapse; margin:32px 0; font-family:'Montserrat', sans-serif; font-size:0.9em;",
+        "th": "background:#fff; color:#7f1d1d; padding:16px; text-align:center; font-weight:800; text-transform:uppercase; border-top:2px solid #7f1d1d; border-bottom:2px solid #7f1d1d;",
+        "td": "padding:16px; border-bottom:1px solid #fee2e2; color:#450a0a; text-align:center;",
+    },
+    {
+        "name": "Coral Glassmorphism",
+        "h2":  "border:none; background:rgba(254,226,226,0.5); backdrop-filter:blur(8px); border-radius:12px; font-family:'Outfit', sans-serif; color:#be123c; padding:16px 24px; margin:48px 0 24px; font-size:1.8em; font-weight:800; box-shadow:0 4px 6px rgba(225,29,72,0.05);",
+        "h3":  "border:none; background:transparent; font-family:'Outfit', sans-serif; color:#e11d48; padding:0; margin:32px 0 16px; font-size:1.4em; font-weight:700; display:inline-block; border-bottom:3px solid #fecdd3;",
+        "strong": "color:#e11d48; font-weight:800;",
+        "blockquote": "border:none; border-left:5px solid #f43f5e; background:linear-gradient(90deg, rgba(254,226,226,0.4) 0%, transparent 100%); padding:24px 32px; border-radius:12px; margin:40px 0; font-style:italic; color:#881337; font-size:1.15em;",
+        "hr": "border:0; height:3px; background:#fecdd3; border-radius:3px; margin:48px 0; width:50%;",
+        "table": "width:100%; border-collapse:separate; border-spacing:0; margin:32px 0; font-family:'Outfit', sans-serif; font-size:0.95em; border:1px solid #fecdd3; border-radius:16px; overflow:hidden;",
+        "th": "background:rgba(254,226,226,0.6); color:#be123c; padding:16px; text-align:left; font-weight:700;",
+        "td": "padding:16px; border-bottom:1px solid #fff1f2; color:#4c0519;",
+    },
+    {
+        "name": "Ocean Deep",
+        "h2":  "border:none; background:transparent; font-family:'Poppins', sans-serif; color:#0f766e; padding:0; border-left:8px solid #0d9488; padding-left:20px; margin:48px 0 24px; font-size:2.1em; font-weight:800; line-height:1.2;",
+        "h3":  "border:none; background:#f0fdfa; font-family:'Poppins', sans-serif; color:#115e59; padding:12px 20px; border-radius:8px; margin:32px 0 16px; font-size:1.4em; font-weight:600;",
+        "strong": "color:#0d9488; font-weight:700; border-bottom:2px solid #99f6e4;",
+        "blockquote": "border:none; border-left:none; background:#115e59; padding:32px; border-radius:16px; margin:40px 0; font-style:italic; color:#ccfbf1; font-size:1.2em; box-shadow:0 10px 25px -5px rgba(13,148,136,0.4); text-align:center;",
+        "hr": "border:0; height:1px; background:linear-gradient(90deg, transparent, #0d9488, transparent); margin:48px 0;",
+        "table": "width:100%; border-collapse:collapse; margin:32px 0; font-family:'Poppins', sans-serif; font-size:0.95em;",
+        "th": "background:#0d9488; color:#fff; padding:16px; text-align:left; font-weight:600; border-radius:8px 8px 0 0;",
+        "td": "padding:16px; border-bottom:1px solid #ccfbf1; color:#134e4a; background:#f0fdfa;",
+    },
+    {
+        "name": "Ouro Real (Premium)",
+        "h2":  "border:none; background:linear-gradient(135deg, #b45309 0%, #f59e0b 50%, #b45309 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-family:'Cinzel', serif; padding:0; text-align:center; margin:56px 0 28px; font-size:2.5em; font-weight:700; letter-spacing:1px;",
+        "h3":  "border:none; background:transparent; font-family:'Lora', serif; color:#b45309; padding:0; margin:32px 0 16px; font-size:1.5em; font-weight:600; font-style:italic; text-align:center;",
         "strong": "color:#b45309; font-weight:700;",
-        "blockquote": "border-left:5px solid #f59e0b; background:#fffbeb; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#78350f;",
-        "callout": "background:linear-gradient(135deg,#fffbeb,#fef3c7); border:1px solid #fde68a; border-left:5px solid #f59e0b; border-radius:12px; padding:20px 24px; margin:28px 0;",
-        "hr": "border:0; border-top:2px dashed #fde68a; margin:42px 0;",
+        "blockquote": "border:none; border-top:1px solid #fcd34d; border-bottom:1px solid #fcd34d; background:rgba(254,243,199,0.3); padding:24px 32px; margin:40px 0; font-style:italic; color:#78350f; font-size:1.2em; font-family:'Lora', serif; text-align:center;",
+        "hr": "border:0; height:1px; background:#f59e0b; margin:48px 0; position:relative; overflow:visible; display:flex; justify-content:center; align-items:center;",
+        "table": "width:100%; border-collapse:collapse; margin:32px 0; font-family:'Lora', serif; font-size:1em; border-top:2px solid #b45309; border-bottom:2px solid #b45309;",
+        "th": "background:transparent; color:#92400e; padding:16px; text-align:left; font-weight:700; border-bottom:1px solid #fcd34d;",
+        "td": "padding:16px; border-bottom:1px dashed #fde68a; color:#78350f;",
     },
     {
-        "name": "Safira Jornalístico",
-        "h2":  "color:#1e40af; border-left:5px solid #3b82f6; padding-left:16px; margin:36px 0 18px; font-size:1.55em;",
-        "h3":  "color:#1d4ed8; border-bottom:1px solid #bfdbfe; padding-bottom:8px; margin:26px 0 14px;",
-        "strong": "color:#1d4ed8; font-weight:700;",
-        "blockquote": "border-left:5px solid #3b82f6; background:#eff6ff; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#1e3a5f;",
-        "callout": "background:linear-gradient(135deg,#eff6ff,#dbeafe); border:1px solid #93c5fd; border-left:5px solid #3b82f6; border-radius:12px; padding:20px 24px; margin:28px 0;",
-        "hr": "border:0; border-top:2px solid #dbeafe; margin:42px 0;",
+        "name": "Cyberpunk Amarelo",
+        "h2":  "border:none; background:#eab308; color:#000; font-family:'Space Grotesk', sans-serif; padding:12px 24px; margin:48px 0 24px; font-size:2em; font-weight:900; text-transform:uppercase; letter-spacing:2px; clip-path:polygon(0 0, 100% 0, 95% 100%, 0 100%); display:inline-block;",
+        "h3":  "border:none; background:transparent; font-family:'Space Grotesk', sans-serif; color:#ca8a04; padding:0; margin:32px 0 16px; font-size:1.4em; font-weight:700; text-transform:uppercase; border-left:4px solid #eab308; padding-left:16px;",
+        "strong": "background:#eab308; color:#000; font-weight:800; padding:2px 6px;",
+        "blockquote": "border:none; border-left:8px solid #ca8a04; background:#fef08a; padding:24px 32px; margin:40px 0; font-style:normal; font-weight:600; color:#000; font-size:1.15em; font-family:'Space Grotesk', sans-serif;",
+        "hr": "border:0; border-top:4px dotted #eab308; margin:48px 0;",
+        "table": "width:100%; border-collapse:collapse; margin:32px 0; font-family:'Space Grotesk', sans-serif; font-size:0.95em; border:2px solid #000;",
+        "th": "background:#000; color:#eab308; padding:16px; text-align:left; font-weight:700; text-transform:uppercase;",
+        "td": "padding:16px; border-bottom:1px solid #000; color:#000; background:#fff;",
     },
     {
-        "name": "Rosa Magazine",
-        "h2":  "color:#be185d; border-left:5px solid #ec4899; padding-left:16px; margin:36px 0 18px; font-size:1.55em; font-style:italic;",
-        "h3":  "background:linear-gradient(90deg,#fdf2f8,transparent); color:#9d174d; padding:8px 14px; border-radius:8px; margin:26px 0 14px;",
-        "strong": "color:#be185d; font-weight:700;",
-        "blockquote": "border-left:5px solid #ec4899; background:#fdf2f8; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#831843;",
-        "callout": "background:linear-gradient(135deg,#fdf2f8,#fce7f3); border:1px solid #f9a8d4; border-left:5px solid #ec4899; border-radius:12px; padding:20px 24px; margin:28px 0;",
-        "hr": "border:0; height:2px; background:linear-gradient(90deg,#ec4899,#f9a8d4,transparent); margin:42px 0;",
-    },
-    {
-        "name": "Ardósia Minimalista",
-        "h2":  "color:#0f172a; border-top:3px solid #475569; padding-top:16px; margin:42px 0 18px; font-size:1.6em; letter-spacing:-.5px; font-weight:800;",
-        "h3":  "color:#334155; text-transform:uppercase; letter-spacing:.9px; font-size:.9em; font-weight:700; margin:30px 0 12px;",
-        "strong": "color:#0f172a; font-weight:800; text-decoration:underline; text-decoration-color:#94a3b8;",
-        "blockquote": "border-left:4px solid #94a3b8; background:#f8fafc; padding:18px 24px; margin:30px 0; font-style:italic; color:#475569;",
-        "callout": "background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid #475569; border-radius:8px; padding:20px 24px; margin:28px 0;",
-        "hr": "border:0; border-top:1px solid #e2e8f0; margin:42px 0;",
-    },
-    {
-        "name": "Índigo Digital",
-        "h2":  "color:#fff; background:linear-gradient(135deg,#4f46e5,#6366f1); padding:12px 20px; border-radius:8px; margin:36px 0 18px; font-size:1.45em; box-shadow:0 4px 14px rgba(99,102,241,.3);",
-        "h3":  "color:#4f46e5; border-left:3px solid #818cf8; padding-left:12px; margin:26px 0 14px; font-family:monospace;",
-        "strong": "color:#4f46e5; font-weight:700;",
-        "blockquote": "border-left:5px solid #6366f1; background:#eef2ff; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#3730a3;",
-        "callout": "background:linear-gradient(135deg,#eef2ff,#e0e7ff); border:1px solid #a5b4fc; border-left:5px solid #6366f1; border-radius:12px; padding:20px 24px; margin:28px 0;",
-        "hr": "border:0; height:2px; background:linear-gradient(90deg,#6366f1,#818cf8,transparent); margin:42px 0;",
-    },
-    {
-        "name": "Rubi Bold News",
-        "h2":  "color:#991b1b; border-left:6px solid #ef4444; padding-left:16px; margin:36px 0 18px; font-size:1.65em; font-weight:800; letter-spacing:-.5px;",
-        "h3":  "color:#b91c1c; border-bottom:2px solid #fca5a5; padding-bottom:8px; margin:26px 0 14px; font-weight:700;",
-        "strong": "color:#dc2626; font-weight:800;",
-        "blockquote": "border-left:6px solid #ef4444; background:#fef2f2; padding:18px 24px; border-radius:0 12px 12px 0; margin:30px 0; font-style:italic; color:#7f1d1d; font-weight:500;",
-        "callout": "background:linear-gradient(135deg,#fef2f2,#fee2e2); border:1px solid #fca5a5; border-left:6px solid #ef4444; border-radius:12px; padding:20px 24px; margin:28px 0;",
-        "hr": "border:0; border-top:3px solid #fca5a5; margin:42px 0;",
-    },
+        "name": "Lavanda Suave",
+        "h2":  "border:none; background:transparent; font-family:'Nunito', sans-serif; color:#6b21a8; padding:0; margin:48px 0 24px; font-size:2em; font-weight:800; border-bottom:3px dashed #d8b4fe; padding-bottom:12px;",
+        "h3":  "border:none; background:rgba(216,180,254,0.3); font-family:'Nunito', sans-serif; color:#7e22ce; padding:8px 16px; border-radius:50px; margin:32px 0 16px; font-size:1.4em; font-weight:700; display:inline-block;",
+        "strong": "color:#6b21a8; font-weight:800;",
+        "blockquote": "border:none; border-left:4px solid #a855f7; background:#faf5ff; padding:24px 32px; border-radius:16px; margin:40px 0; font-style:italic; color:#581c87; font-size:1.15em; box-shadow:0 4px 15px rgba(168,85,247,0.1);",
+        "hr": "border:0; height:4px; background:#e9d5ff; border-radius:4px; margin:48px 0;",
+        "table": "width:100%; border-collapse:separate; border-spacing:0; margin:32px 0; font-family:'Nunito', sans-serif; font-size:0.95em; border-radius:12px; overflow:hidden; box-shadow:0 4px 6px rgba(0,0,0,0.05);",
+        "th": "background:#e9d5ff; color:#581c87; padding:16px; text-align:left; font-weight:700;",
+        "td": "padding:16px; border-bottom:1px solid #f3e8ff; color:#4c1d95; background:#fff;",
+    }
 ]
 
 
@@ -1340,6 +1356,9 @@ def _apply_styles_regex(html: str, theme: dict) -> str:
         ("ul",         _FORMAT_UL_STYLE),
         ("ol",         _FORMAT_UL_STYLE),
         ("li",         _FORMAT_LI_STYLE),
+        ("table",      theme.get("table", "")),
+        ("th",         theme.get("th", "")),
+        ("td",         theme.get("td", "")),
     ]
 
     def make_replacer(tag: str, style: str):
@@ -1532,6 +1551,9 @@ class FormatContentView(View):
         if not html_content:
             return JsonResponse({"status": "error", "error": "O conteúdo está vazio."})
 
+        # Remove estilos embutidos existentes para garantir que o LLM não mantenha o layout antigo
+        html_clean = re.sub(r'\sstyle\s*=\s*(["\']).*?\1', '', html_content, flags=re.IGNORECASE)
+
         theme = random.choice(_FORMAT_THEMES)
         model_name = request.POST.get("model", "llama-3.3-70b-versatile")
         small = _is_small_model(model_name)
@@ -1543,7 +1565,7 @@ class FormatContentView(View):
             else [_build_format_prompt_full(theme), _build_format_prompt_simple(theme)]
         )
 
-        html_to_send = _truncate_html_safe(html_content)
+        html_to_send = _truncate_html_safe(html_clean)
         user_msg = f"HTML DO ARTIGO:\n\n{html_to_send}"
 
         try:

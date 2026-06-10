@@ -197,8 +197,9 @@ TINYMCE_DEFAULT_CONFIG = {
     "skin": "oxide",
 
     # Permite que o TinyMCE preserve todos os estilos inline (necessário para a IA formatadora)
-    "valid_styles": {"*": "*"},
-    "extended_valid_elements": "*[style|class|id|data-*]",
+    "extended_valid_elements": "*[*]",
+    "valid_elements": "*[*]",
+    "verify_html": False,
 }
 
 
